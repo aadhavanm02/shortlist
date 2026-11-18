@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useStore, updateProfile } from '../lib/store.js';
 import { TopBar, Field, Banner, Icon } from '../components/ui.jsx';
 import ResumeView from '../components/ResumeView.jsx';
 import { normalizeResume, EMPTY_RESUME } from '../lib/resume.js';
 import { buildPdf, downloadBlob } from '../lib/pdfDoc.jsx';
+import { importResumePdf } from '../lib/importResume.js';
 
 export default function MasterEditor({ pid, route }) {
   const p = useStore((s) => s.profiles[pid]);
@@ -11,6 +12,18 @@ export default function MasterEditor({ pid, route }) {
   const [saved, setSaved] = useState(true);
   const [fit, setFit] = useState({ overLines: 0 });
   const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+  const [importing, setImporting] = useState(false);
+  const [importMsg, setImportMsg] = useState(null);
+  // Replace the master with a new PDF (saved right away; tailored versions you already made stay as they are)
+  const replacePdf = async (e) => {
+    const fl = e.target.files?.[0]; e.target.value = '';
+    if (!fl) return;
+    setImporting(true); setImportMsg(null);
+    const { resume, msg } = await importResumePdf(pid, fl, p.name);
+    if (resume) { setR(resume); updateProfile(pid, (pp) => { pp.resume = resume; pp.resumeFile = fl.name; pp.resumeUpdated = Date.now(); }); setSaved(true); }
+    setImportMsg(msg); setImporting(false);
+  };
   const up = (fn) => { setR((x) => { const c = structuredClone(x); fn(c); return c; }); setSaved(false); };
 
   const save = () => { updateProfile(pid, (pp) => { pp.resume = r; pp.resumeUpdated = Date.now(); }); setSaved(true); };
@@ -27,6 +40,12 @@ export default function MasterEditor({ pid, route }) {
         <section className="l">
           <div className="between"><h1 className="title" style={{ fontSize: 26 }}>Master resume</h1><div className="row"><button className="btn sm" onClick={save} disabled={saved}>{saved ? 'Saved' : 'Save changes'}</button></div></div>
           <p className="sub">Every tailored version starts from this. Use **double asterisks** to bold a number. Manual edits never use AI.</p>
+          <div className="card tight" style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <div className="col" style={{ flex: 1, gap: 2, minWidth: 0 }}><b style={{ color: 'var(--ink)', fontSize: 14 }}>{p.resumeFile || 'Master resume'}</b><span className="small">Replace it with a new PDF (uses 1 refinement)</span></div>
+            <button className="btn secondary sm" onClick={() => fileRef.current.click()} disabled={importing}>{importing ? <><span className="spinner" style={{ width: 16, height: 16, borderWidth: 3 }} />Reading…</> : <><Icon n="upload" s={16} />Replace PDF</>}</button>
+            <input ref={fileRef} type="file" accept="application/pdf" className="sr-only" onChange={replacePdf} />
+          </div>
+          {importMsg ? <Banner tone={importMsg.tone} icon={importMsg.tone === 'ok' ? 'check' : 'alert'}>{importMsg.text}</Banner> : null}
           <div className="card" style={{ gap: 14 }}>
             <div className="grid2" style={{ gap: 12 }}>{inp(r.name, (v) => up((c) => { c.name = v; }), 'Name')}{inp(r.title, (v) => up((c) => { c.title = v; }), 'Title')}{inp(r.phone, (v) => up((c) => { c.phone = v; }), 'Phone')}{inp(r.email, (v) => up((c) => { c.email = v; }), 'Email')}</div>
             <span className="label">Links</span>

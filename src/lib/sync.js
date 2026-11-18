@@ -12,6 +12,7 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut as fbSignOut, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { firebaseConfig } from './firebase-config.js';
+import { API } from './api.js';
 import { getState, setState, subscribe, blankProfile, normalizeProfile, clearLocal } from './store.js';
 
 const app = initializeApp(firebaseConfig);
@@ -205,3 +206,15 @@ onAuthStateChanged(auth, (user) => {
   if (user) start(user);
   else { currentUser = null; clearTimeout(retryTimer); stop(); setAuth({ status: 'out', user: null }); }
 });
+
+// This person's master resume (and suggested preferences), kept privately on the server
+export async function fetchMaster() {
+  const u = auth.currentUser;
+  if (!u) return null;
+  try {
+    const res = await fetch(`${API}/master`, { headers: { Authorization: `Bearer ${await u.getIdToken()}` } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.found ? data : null;
+  } catch { return null; }
+}

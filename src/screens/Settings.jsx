@@ -77,7 +77,7 @@ export default function Settings({ pid, route }) {
         <span className="label" style={{ margin: '10px 4px 0' }}>Job search</span>
         <div className="mlist">
           <a className="mrow" href="#/setup" style={{ textDecoration: 'none' }}><span className="mrow-main"><span className="mrow-t">Job preferences</span><span className="mrow-s">{p.prefs.titles.length} titles · {p.prefs.cities.join(', ') || 'Remote'}{p.prefs.expMin || p.prefs.expMax ? ` · ${p.prefs.expMin || 0}–${p.prefs.expMax || '?'} yrs` : ''}</span></span>{chev}</a>
-          <a className="mrow" href="#/resumes/master" style={{ textDecoration: 'none' }}><span className="mrow-main"><span className="mrow-t">Master resume</span><span className="mrow-s">{p.resumeFile || p.resume?.name || 'Not added'}</span></span>{chev}</a>
+          <a className="mrow" href="#/resumes/master" style={{ textDecoration: 'none' }}><span className="mrow-main"><span className="mrow-t">Master resume</span><span className="mrow-s">{p.resumeFile || p.resume?.name || 'Not added'} · edit or replace</span></span>{chev}</a>
         </div>
 
         <span className="label" style={{ margin: '10px 4px 0' }}>AI usage today · resets in {formatDuration(msUntilQuotaReset())}</span>
@@ -128,7 +128,7 @@ export default function Settings({ pid, route }) {
             <button className="btn ghost sm" onClick={doSignOut}>Sign out</button>
           </div>
           {row('Job preferences', `${p.prefs.titles.length} titles · ${p.prefs.cities.join(', ') || 'Remote'}${p.prefs.expMin || p.prefs.expMax ? ` · ${p.prefs.expMin || 0}–${p.prefs.expMax || '?'} yrs` : ''}`, <a className="btn secondary sm" href="#/setup">Edit</a>)}
-          {row('Master resume', p.resumeFile || p.resume?.name || 'Not added', <a className="btn secondary sm" href="#/resumes/master">Edit</a>)}
+          {row('Master resume', `${p.resumeFile || p.resume?.name || 'Not added'} · edit or replace with a new PDF`, <a className="btn secondary sm" href="#/resumes/master">Edit</a>)}
         </section>
 
         <section className="card" id="usage" style={{ padding: '20px 28px', gap: 0 }}>

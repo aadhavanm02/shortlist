@@ -16,7 +16,7 @@ function cors(origin) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     'Access-Control-Max-Age': '86400',
     Vary: 'Origin',
   };
@@ -30,6 +30,28 @@ function json(body, status, origin) {
 async function relay(res, origin) {
   const h = new Headers({ 'Content-Type': res.headers.get('Content-Type') || 'application/json', ...cors(origin) });
   return new Response(res.body, { status: res.status, headers: h });
+}
+
+// ---------- Firebase sign-in check (for /master) ----------
+const PROJECT = 'shortlist-e31e0';
+let jwks = null; let jwksAt = 0;
+const b64url = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(s.length / 4) * 4, '=')), (c) => c.charCodeAt(0));
+async function verifyIdToken(token) {
+  const [h, p, sig] = (token || '').split('.');
+  if (!sig) return null;
+  const header = JSON.parse(new TextDecoder().decode(b64url(h)));
+  const claims = JSON.parse(new TextDecoder().decode(b64url(p)));
+  if (Date.now() - jwksAt > 3600000 || !jwks) {
+    jwks = (await (await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')).json()).keys;
+    jwksAt = Date.now();
+  }
+  const jwk = jwks.find((k) => k.kid === header.kid);
+  if (!jwk || header.alg !== 'RS256') return null;
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+  const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64url(sig), new TextEncoder().encode(`${h}.${p}`));
+  const now = Math.floor(Date.now() / 1000);
+  if (!ok || claims.aud !== PROJECT || claims.iss !== `https://securetoken.google.com/${PROJECT}` || claims.exp < now || claims.iat > now + 300) return null;
+  return claims;
 }
 
 // A missing key answers 424, so the app never confuses it with a provider's 503 "busy".
@@ -82,6 +104,16 @@ export default {
       q.set('app_id', env.ADZUNA_ID); q.set('app_key', env.ADZUNA_KEY);
       const res = await fetch(`https://api.adzuna.com/v1/api/jobs/in/search/1?${q}`);
       return relay(res, origin);
+    }
+
+    // GET /master  (Authorization: Bearer <Firebase ID token>) -> this person's master resume, if one is stored
+    if (path === '/master' && req.method === 'GET') {
+      const claims = await verifyIdToken((req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, ''));
+      if (!claims) return json({ error: 'unauthorized' }, 401, origin);
+      if (!claims.email || claims.email_verified === false || !env.MASTERS) return json({ found: false }, 200, origin);
+      const who = await env.MASTERS.get(`email:${claims.email.toLowerCase()}`);
+      const data = who ? await env.MASTERS.get(`master:${who}`, 'json') : null;
+      return json(data ? { found: true, ...data } : { found: false }, 200, origin);
     }
 
     return json({ error: 'not found' }, 404, origin);
