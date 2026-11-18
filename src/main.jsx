@@ -11,7 +11,6 @@ import '@fontsource/open-sans/600.css';
 import '@fontsource/open-sans/700.css';
 import './styles.css';
 import App from './App.jsx';
-import { setupNative } from './lib/native.js';
+import './lib/pwa.js'; // listens for Chrome's install prompt early
 
 createRoot(document.getElementById('root')).render(<App />);
-setupNative();

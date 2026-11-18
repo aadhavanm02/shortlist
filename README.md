@@ -22,15 +22,9 @@ npx wrangler secret put GEMINI_KEY       # replace a key (also GROQ_KEY, RAPIDAP
 
 Both people share these keys, so free limits are shared too. The default daily limits in Settings are split between you.
 
-## Android app
+## Install on a phone or computer
 
-Open **[aadhavanm02.github.io/shortlist/android.html](https://aadhavanm02.github.io/shortlist/android.html)** on the phone, download the newest `Shortlist-1.0.N.apk`, open it, and allow installing from that source when Android asks. Every push to `main` builds a new versioned APK, and that page always links the newest one (`.github/workflows/android.yml`).
-
-- The app is the same web app wrapped with Capacitor (`android/`, `capacitor.config.json`).
-- PDFs save to Documents/Shortlist and open the share sheet (Files, Drive, WhatsApp, Gmail).
-- A reminder notification arrives at 7 AM each day.
-- Updates install over the old app only when every APK is signed with the same key, stored as the repo secrets `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`. Without them each build uses a temporary key, so you would have to uninstall first, which clears the app's saved data.
-- Icons and splash come from `assets/` (`npx @capacitor/assets generate --android`).
+Shortlist is an installable web app. Open https://aadhavanm02.github.io/shortlist/install.html for steps (Chrome menu → Install app, or Safari → Share → Add to Home Screen). `public/manifest.webmanifest` and the icons in `public/` make it installable.
 
 ## Daily use
 
@@ -57,7 +51,7 @@ npm run dev      # local dev server
 npm run build    # production build in dist/
 ```
 
-Pushing to `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`. The site has a home page (`index.html`), the web app (`app/index.html`, served at `/shortlist/app/`), the Android download page (`public/android.html`) and the changelog (`public/changelog.html`, update it with each release). In the repo, set **Settings → Pages → Source** to **GitHub Actions** once.
+Pushing to `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`. The site has a home page (`index.html`), the web app (`app/index.html`, served at `/shortlist/app/`), the install guide (`public/install.html`; `android.html` redirects there) and the changelog (`public/changelog.html`, update it with each release). In the repo, set **Settings → Pages → Source** to **GitHub Actions** once.
 
 ## Notes
 

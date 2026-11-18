@@ -4,7 +4,6 @@
 
 const ALLOWED = [
   'https://aadhavanm02.github.io',
-  'https://localhost', // the Android app (Capacitor WebView)
   /^http:\/\/localhost(:\d+)?$/,
   /^http:\/\/127\.0\.0\.1(:\d+)?$/,
 ];

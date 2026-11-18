@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#FAF8F6">
+<title>Install Shortlist</title>
+<meta name="description" content="Install the Shortlist web app on your phone or computer.">
+<meta property="og:title" content="Install Shortlist">
+<meta property="og:description" content="Install the Shortlist web app on your phone or computer.">
+<meta property="og:image" content="https://aadhavanm02.github.io/shortlist/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23F06434'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1C1A22; --txt:#3B3941; --mut:#6A6670; --line:#ECE7E4; --bg:#FAF8F6; --acc:#F06434; --acct:#B8461C; --tint:#FEF0EA; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--txt); font: 15px/1.55 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  a { color: var(--acct); }
+  .bar { height: 8px; background: linear-gradient(90deg,#F06434 0%,#F5A27F 60%,#F9C9B4 100%); }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 0 20px 56px; }
+  header { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .mark { width: 32px; height: 32px; border-radius: 9px; background: var(--acc); display: flex; align-items: center; justify-content: center; }
+  .logo b { font: 800 20px Manrope, sans-serif; color: var(--ink); }
+  h1 { margin: 16px 0 6px; font: 800 32px/1.15 Manrope, sans-serif; color: var(--ink); }
+  .sub { margin: 0 0 24px; color: var(--mut); }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; margin-bottom: 14px; }
+  .card h2 { margin: 0 0 10px; font: 800 18px Manrope, sans-serif; color: var(--ink); display: flex; align-items: center; gap: 10px; }
+  .chip { font: 700 12px Inter, sans-serif; border-radius: 6px; padding: 3px 8px; background: var(--tint); color: #8F3412; }
+  ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 54px; border-radius: 14px; border: 0; width: 100%; background: var(--ink); color: #fff; font: 700 16px Inter, sans-serif; cursor: pointer; text-decoration: none; }
+  .btn.secondary { background: #fff; color: var(--ink); border: 1px solid #DDD6D2; }
+  #installCard { display: none; }
+  .why { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .why div { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 14px; font-size: 13px; color: var(--mut); }
+  .why b { display: block; color: var(--ink); font-size: 14px; margin-bottom: 2px; }
+  @media (max-width: 560px) { .why { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<div class="wrap">
+  <header><a class="logo" href="./"><span class="mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><b>Shortlist</b></a><a href="app/" style="font-weight:600;font-size:14px;text-decoration:none">Open app</a></header>
+
+  <h1>Install Shortlist</h1>
+  <p class="sub">Shortlist is a web app. Install it from your browser and it opens full screen with its own icon, just like an app. No app store needed.</p>
+
+  <div class="card" id="installCard">
+    <h2>Ready to install</h2>
+    <button class="btn" id="installBtn">Install Shortlist</button>
+  </div>
+  <div class="card" id="doneCard" style="display:none"><h2>Already installed</h2><p style="margin:0">Open Shortlist from your home screen or app list.</p></div>
+
+  <div class="why">
+    <div><b>Full screen</b>No browser bar, opens from your home screen.</div>
+    <div><b>Always up to date</b>Every update arrives the next time you open it.</div>
+    <div><b>Small</b>No big download or store account.</div>
+  </div>
+
+  <div class="card">
+    <h2>Android <span class="chip">Chrome</span></h2>
+    <ol>
+      <li>Open <a href="app/">the web app</a> in Chrome.</li>
+      <li>Tap the menu <b>⋮</b> at the top right.</li>
+      <li>Tap <b>Install app</b> (or <b>Add to Home screen</b>), then <b>Install</b>.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h2>iPhone <span class="chip">Safari</span></h2>
+    <ol>
+      <li>Open <a href="app/">the web app</a> in Safari.</li>
+      <li>Tap the <b>Share</b> button at the bottom.</li>
+      <li>Tap <b>Add to Home Screen</b>, then <b>Add</b>.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h2>Computer <span class="chip">Chrome or Edge</span></h2>
+    <ol>
+      <li>Open <a href="app/">the web app</a>.</li>
+      <li>Click the install icon at the right end of the address bar.</li>
+      <li>Click <b>Install</b>. Shortlist gets its own window.</li>
+    </ol>
+  </div>
+  <a class="btn secondary" href="app/">Open the web app</a>
+  <p style="text-align:center;font-size:13px;color:var(--mut);margin-top:18px"><a href="./">Home</a> · <a href="changelog.html">What's new</a></p>
+</div>
+<script>
+  var deferred = null;
+  if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) document.getElementById('doneCard').style.display = 'block';
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferred = e; document.getElementById('installCard').style.display = 'block'; });
+  window.addEventListener('appinstalled', function () { document.getElementById('installCard').style.display = 'none'; document.getElementById('doneCard').style.display = 'block'; });
+  document.getElementById('installBtn').addEventListener('click', function () { if (deferred) { deferred.prompt(); deferred = null; } });
+</script>
+</body>
+</html>

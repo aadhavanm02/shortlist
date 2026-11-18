@@ -176,9 +176,10 @@ input::placeholder, textarea::placeholder { color: #8A8590; }
 .pagebreak { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--errb); }
 .pagebreak span { position: absolute; right: 8px; top: 4px; font-size: 12px; font-weight: 700; color: var(--err); background: #fff; padding: 0 4px; }
 
-/* ===== Android layout (native app and phone widths) ===== */
-html.native, html.native body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
-html.native .appbar, html.native .bnav, html.native .mhead, html.native .btn, html.native .tab, html.native .seg { -webkit-user-select: none; user-select: none; }
+/* ===== Phone layout (Android-style) ===== */
+html, body { -webkit-tap-highlight-color: transparent; }
+@media (display-mode: standalone) { html, body { overscroll-behavior-y: none; } }
+@media (max-width: 760px) { .appbar, .bnav, .mhead, .btn, .tab, .seg { -webkit-user-select: none; user-select: none; } }
 .appbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 6px; padding: 10px 12px; min-height: 64px; background: #fff; border-bottom: 1px solid var(--line); }
 .appbar-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .appbar-t .t { font-family: var(--h); font-weight: 800; font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

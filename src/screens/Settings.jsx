@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStore, updateProfile, resetProfile, usageOf, msUntilQuotaReset, formatDuration, exportProfile, setActive, getSaveError } from '../lib/store.js';
 import { TopBar, Icon, Avatar, Modal, Field, Banner, useMobile } from '../components/ui.jsx';
 import { downloadBlob } from '../lib/pdfDoc.jsx';
-import { useAppVersion } from '../lib/native.js';
+import { useAppVersion, useInstall } from '../lib/pwa.js';
 
 function Bar({ label, used, total, note, grey }) {
   const pct = total ? Math.min(100, Math.round((used / total) * 100)) : 0;
@@ -23,6 +23,7 @@ export default function Settings({ pid, route }) {
   const [confirm, setConfirm] = useState(false);
   const u = usageOf(p);
   const version = useAppVersion();
+  const inst = useInstall();
   const mobile = useMobile();
 
   const save = () => {
@@ -91,7 +92,13 @@ export default function Settings({ pid, route }) {
           <button className="btn" onClick={save}>{saved ? '✓ Saved' : 'Save settings'}</button>
         </div>
         <span className="small">Export keeps your preferences and master resume in a file you can load on another device.</span>
-        <div className="between" style={{ borderTop: '1px solid var(--line)', paddingTop: 16 }}><span className="small">{version}</span><a href="../changelog.html" target="_blank" rel="noreferrer" style={{ fontSize: 14, fontWeight: 600 }}>What's new</a></div>
+        {!inst.installed ? (
+          <section className="card" style={{ gap: 10 }}>
+            <div className="between" style={{ flexWrap: 'nowrap' }}><div className="col" style={{ gap: 2 }}><b style={{ color: 'var(--ink)' }}>Install Shortlist</b><span className="small">Open it full screen from your home screen, like an app.</span></div>
+              {inst.canPrompt ? <button className="btn sm" onClick={inst.install}>Install</button> : <a className="btn secondary sm" href="../install.html">How to</a>}</div>
+          </section>
+        ) : null}
+        <div className="between" style={{ borderTop: '1px solid var(--line)', paddingTop: 16 }}><span className="small">{version}</span><a href="../changelog.html" style={{ fontSize: 14, fontWeight: 600 }}>What's new</a></div>
       </main>
       {confirm ? (
         <Modal onClose={() => setConfirm(false)} labelledBy="rst">

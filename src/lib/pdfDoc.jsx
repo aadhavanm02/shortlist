@@ -1,6 +1,5 @@
 // Vector PDF of the resume, same design as the HTML preview. Links stay clickable.
 import { Document, Page, View, Text, Link, Font, Svg, Defs, LinearGradient, Stop, Rect, pdf } from '@react-pdf/renderer';
-import { isNative, saveNative } from './native.js';
 import { segments } from './resume.js';
 import { countPages } from './pdfText.js';
 
@@ -111,7 +110,6 @@ export async function buildPdf(resume) {
 }
 
 export function downloadBlob(blob, name) {
-  if (isNative) return saveNative(blob, name);
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);

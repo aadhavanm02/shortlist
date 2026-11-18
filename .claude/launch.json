@@ -13,14 +13,6 @@
         "--strictPort"
       ],
       "port": 5173
-    },
-    {
-      "name": "native-sim",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [
-        "scripts/native-sim-server.mjs"
-      ],
-      "port": 5180
     }
   ]
 }

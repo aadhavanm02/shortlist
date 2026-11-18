@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, usageOf, setActive } from '../lib/store.js';
-import { isNative } from '../lib/native.js';
 
 const P = {
   back: <path d="M15 6l-6 6 6 6" />, search: <><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></>,
@@ -20,11 +19,11 @@ const P = {
   gear: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></>,
 };
 
-// Android layout: the native app, or any phone-width screen
+// Phone layout (Android-style) for any phone-width screen
 const mq = typeof window !== 'undefined' ? window.matchMedia('(max-width: 760px)') : null;
 export function useMobile() {
-  const [m, setM] = useState(isNative || !!mq?.matches);
-  useEffect(() => { if (isNative || !mq) return undefined; const f = () => setM(mq.matches); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f); }, []);
+  const [m, setM] = useState(!!mq?.matches);
+  useEffect(() => { if (!mq) return undefined; const f = () => setM(mq.matches); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f); }, []);
   return m;
 }
 

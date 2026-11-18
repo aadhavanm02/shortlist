@@ -1,10 +1,13 @@
 import { useStore, setActive } from '../lib/store.js';
 import { Logo, Avatar, Icon, useMobile } from '../components/ui.jsx';
-import { useAppVersion } from '../lib/native.js';
+import { useAppVersion, useInstall } from '../lib/pwa.js';
 
 export default function Profiles() {
   const profiles = useStore((s) => s.profiles);
+  const open = (id) => { setActive(id); location.hash = profiles[id].setup ? '#/jobs' : '#/setup'; };
   const version = useAppVersion();
+  const inst = useInstall();
+  const installLink = inst.installed ? null : inst.canPrompt ? <> · <button className="btn ghost sm" style={{ height: 'auto', padding: 0, fontSize: 13 }} onClick={inst.install}>Install app</button></> : <> · <a href="../install.html">Install app</a></>;
   const mobile = useMobile();
   if (mobile) return (
     <div className="app" style={{ minHeight: '100dvh' }}>
@@ -29,10 +32,9 @@ export default function Profiles() {
           })}
         </div>
       </main>
-      <footer style={{ padding: '0 20px calc(22px + env(safe-area-inset-bottom))', textAlign: 'center' }} className="small">Switch profiles anytime from Settings.<br />{version} · <a href="../changelog.html" target="_blank" rel="noreferrer">What's new</a></footer>
+      <footer style={{ padding: '0 20px calc(22px + env(safe-area-inset-bottom))', textAlign: 'center' }} className="small">Switch profiles anytime from Settings.<br />{version} · <a href="../changelog.html">What's new</a>{installLink}</footer>
     </div>
   );
-  const open = (id) => { setActive(id); location.hash = profiles[id].setup ? '#/jobs' : '#/setup'; };
   return (
     <div className="app">
       <header style={{ padding: '18px 32px' }}><Logo /></header>
@@ -58,7 +60,7 @@ export default function Profiles() {
           })}
         </div>
       </main>
-      <footer style={{ padding: 20, textAlign: 'center' }} className="small">Two profiles only. Switch anytime from Settings.<br />{version} · <a href="../changelog.html" target="_blank" rel="noreferrer">What's new</a></footer>
+      <footer style={{ padding: 20, textAlign: 'center' }} className="small">Two profiles only. Switch anytime from Settings.<br />{version} · <a href="../changelog.html">What's new</a>{installLink}</footer>
     </div>
   );
 }

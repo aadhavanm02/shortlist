@@ -3,73 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#FAF8F6">
-<title>Get Shortlist for Android</title>
-<meta name="description" content="Download the latest Shortlist app for Android.">
-<meta property="og:title" content="Get Shortlist for Android">
-<meta property="og:description" content="Download the latest Shortlist app for Android.">
-<meta property="og:image" content="https://aadhavanm02.github.io/shortlist/og.png">
-<meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23F06434'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
-<style>
-  :root { --ink:#1C1A22; --txt:#3B3941; --mut:#6A6670; --line:#ECE7E4; --bg:#FAF8F6; --acc:#F06434; --acct:#B8461C; --tint:#FEF0EA; }
-  * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--txt); font: 15px/1.5 Inter, system-ui, -apple-system, Roboto, sans-serif; display: flex; flex-direction: column; }
-  .bar { height: 8px; background: linear-gradient(90deg,#F06434 0%,#F5A27F 60%,#F9C9B4 100%); }
-  main { flex: 1; width: 100%; max-width: 440px; margin: 0 auto; padding: 40px 20px; display: flex; flex-direction: column; gap: 22px; }
-  .logo { display: flex; align-items: center; gap: 12px; }
-  .mark { width: 52px; height: 52px; border-radius: 14px; background: var(--acc); display: flex; align-items: center; justify-content: center; }
-  .logo b { font: 800 26px Manrope, system-ui, sans-serif; color: var(--ink); }
-  h1 { margin: 0; font: 800 28px/1.15 Manrope, system-ui, sans-serif; color: var(--ink); }
-  .card { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
-  .btn { display: flex; align-items: center; justify-content: center; gap: 10px; height: 56px; border-radius: 14px; background: var(--ink); color: #fff; font-weight: 700; font-size: 16px; text-decoration: none; }
-  .btn[aria-disabled="true"] { background: #E7E3E0; color: var(--mut); pointer-events: none; }
-  .meta { text-align: center; font-size: 13px; color: var(--mut); }
-  ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
-  .note { background: var(--tint); color: #8F3412; border-radius: 12px; padding: 12px 14px; font-size: 14px; }
-  a { color: var(--acct); }
-</style>
+<title>Install Shortlist</title>
+<meta http-equiv="refresh" content="0; url=install.html">
+<link rel="canonical" href="https://aadhavanm02.github.io/shortlist/install.html">
 </head>
-<body>
-<div class="bar"></div>
-<main>
-  <div class="logo"><span class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><b>Shortlist</b></div>
-  <h1>Get the Android app</h1>
-  <div class="card">
-    <a id="dl" class="btn" href="https://github.com/aadhavanm02/shortlist/releases/tag/android-latest" aria-disabled="true">Finding the latest version…</a>
-    <div id="meta" class="meta">&nbsp;</div>
-  </div>
-  <div class="card">
-    <b style="color:var(--ink)">How to install</b>
-    <ol>
-      <li>Tap the button above. The file name includes the version number, so you always know which one you have.</li>
-      <li>Open the downloaded file. If Android asks, allow installing from this source.</li>
-      <li>Tap <b>Update</b> or <b>Install</b>.</li>
-    </ol>
-    <div class="note">If it says <b>App not installed</b>, uninstall the old Shortlist app first, then install again. This is only needed once.</div>
-  </div>
-  <p class="meta"><a href="app/">Open the web app instead</a> · <a href="changelog.html">What's new</a> · <a href="./">Home</a></p>
-</main>
-<script>
-  (async () => {
-    const btn = document.getElementById('dl'), meta = document.getElementById('meta');
-    try {
-      const r = await fetch('https://api.github.com/repos/aadhavanm02/shortlist/releases/tags/android-latest', { cache: 'no-store' });
-      if (!r.ok) throw new Error(r.status);
-      const rel = await r.json();
-      const apk = (rel.assets || []).filter((a) => a.name.endsWith('.apk')).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))[0];
-      if (!apk) throw new Error('no apk');
-      const ver = (apk.name.match(/(\d+\.\d+\.\d+)/) || [])[1];
-      btn.href = apk.browser_download_url;
-      btn.textContent = 'Download Shortlist' + (ver ? ' ' + ver : '');
-      btn.removeAttribute('aria-disabled');
-      meta.textContent = (apk.size / 1048576).toFixed(1) + ' MB · updated ' + new Date(apk.updated_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
-    } catch {
-      btn.textContent = 'Open the download page';
-      btn.removeAttribute('aria-disabled');
-      meta.textContent = 'Pick the .apk file under Assets.';
-    }
-  })();
-</script>
+<body style="font-family:system-ui,sans-serif;padding:24px">
+<p>The Android app has been replaced by the installable web app. <a href="install.html">See how to install Shortlist</a>.</p>
 </body>
 </html>
