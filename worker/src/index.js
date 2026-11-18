@@ -45,9 +45,13 @@ async function verifyIdToken(token) {
     jwks = (await (await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')).json()).keys;
     jwksAt = Date.now();
   }
-  const jwk = jwks.find((k) => k.kid === header.kid);
+  let jwk = jwks.find((k) => k.kid === header.kid);
+  if (!jwk) { // keys rotate: refetch once
+    jwks = (await (await fetch('https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com')).json()).keys;
+    jwksAt = Date.now(); jwk = jwks.find((k) => k.kid === header.kid);
+  }
   if (!jwk || header.alg !== 'RS256') return null;
-  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+  const key = await crypto.subtle.importKey('jwk', { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: 'RS256', ext: true }, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, b64url(sig), new TextEncoder().encode(`${h}.${p}`));
   const now = Math.floor(Date.now() / 1000);
   if (!ok || claims.aud !== PROJECT || claims.iss !== `https://securetoken.google.com/${PROJECT}` || claims.exp < now || claims.iat > now + 300) return null;
@@ -108,12 +112,19 @@ export default {
 
     // GET /master  (Authorization: Bearer <Firebase ID token>) -> this person's master resume, if one is stored
     if (path === '/master' && req.method === 'GET') {
-      const claims = await verifyIdToken((req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, ''));
-      if (!claims) return json({ error: 'unauthorized' }, 401, origin);
-      if (!claims.email || claims.email_verified === false || !env.MASTERS) return json({ found: false }, 200, origin);
-      const who = await env.MASTERS.get(`email:${claims.email.toLowerCase()}`);
-      const data = who ? await env.MASTERS.get(`master:${who}`, 'json') : null;
-      return json(data ? { found: true, ...data } : { found: false }, 200, origin);
+      try {
+        let claims = null;
+        try { claims = await verifyIdToken((req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '')); } catch (e) { console.error('verify', e?.message); }
+        if (!claims) return json({ error: 'unauthorized' }, 401, origin);
+        if (!env.MASTERS) return json({ found: false, reason: 'nostore' }, 200, origin);
+        if (!claims.email) return json({ found: false, reason: 'noemail' }, 200, origin);
+        const who = await env.MASTERS.get(`email:${claims.email.trim().toLowerCase()}`);
+        const data = who ? await env.MASTERS.get(`master:${who}`, 'json') : null;
+        return json(data ? { found: true, ...data } : { found: false, reason: 'nomatch' }, 200, origin);
+      } catch (e) {
+        console.error('master', e?.message);
+        return json({ error: 'server' }, 500, origin);
+      }
     }
 
     return json({ error: 'not found' }, 404, origin);

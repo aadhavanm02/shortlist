@@ -210,15 +210,19 @@ onAuthStateChanged(auth, (user) => {
 });
 
 // This person's master resume (and suggested preferences), kept privately on the server
+// Retries a few times (fresh sign-in token, network blips) before deciding there is no stored resume.
 export async function fetchMaster() {
-  const u = auth.currentUser;
-  if (!u) return null;
-  try {
-    const res = await fetch(`${API}/master`, { headers: { Authorization: `Bearer ${await u.getIdToken()}` } });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.found ? data : null;
-  } catch { return null; }
+  for (let i = 0; i < 4; i++) {
+    const u = auth.currentUser;
+    if (u) {
+      try {
+        const res = await fetch(`${API}/master`, { cache: 'no-store', headers: { Authorization: `Bearer ${await u.getIdToken(i > 0)}` } });
+        if (res.ok) { const data = await res.json(); return data.found ? data : null; }
+      } catch { /* try again */ }
+    }
+    await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+  }
+  return null;
 }
 
 // When a newer master resume is stored on the server, use it (the design and header stay the person's own)
@@ -228,6 +232,6 @@ async function refreshMaster() {
   const m = await fetchMaster();
   if (!m?.resume || !uid) return;
   const ver = m.version || 1;
-  if (ver <= (p.masterVersion || 0)) return;
+  if (p.resume && ver <= (p.masterVersion || 0)) return;
   updateProfile(uid, (pp) => { pp.resume = normalizeResume(m.resume); pp.resumeFile = m.fileName || pp.resumeFile; pp.resumeUpdated = Date.now(); pp.masterVersion = ver; });
 }
