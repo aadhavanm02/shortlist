@@ -71,7 +71,22 @@ export function Quota({ pid }) {
 export function TopBar({ pid, route, back, title, sub }) {
   const p = useStore((s) => s.profiles[pid]);
   const mobile = useMobile();
-  if (mobile) return back ? <AppBar back={back.href} title={title || back.label} sub={sub} /> : <BottomNav route={route} />;
+  if (mobile) {
+    if (back) return <AppBar back={back.href} title={title || back.label} sub={sub} />;
+    return (
+      <>
+        {title ? (
+          <header className="mhead" style={{ paddingBottom: 14 }}>
+            <div className="between" style={{ flexWrap: 'nowrap' }}>
+              <div className="col" style={{ gap: 2, minWidth: 0 }}><h1>{title}</h1>{sub ? <span className="small">{sub}</span> : null}</div>
+              <button className="avatar-btn" aria-label="Switch profile" onClick={() => { setActive(null); location.hash = '#/'; }}><Avatar id={pid} s={40} /></button>
+            </div>
+          </header>
+        ) : null}
+        <BottomNav route={route} />
+      </>
+    );
+  }
   const on = (r) => (route.startsWith(r) ? 'navlink on' : 'navlink');
   return (
     <header className="topbar">

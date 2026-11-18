@@ -22,7 +22,7 @@ export default function MasterEditor({ pid, route }) {
 
   return (
     <div className="app">
-      <TopBar pid={pid} route={route} back={{ href: '#/resumes', label: 'Resumes' }} />
+      <TopBar pid={pid} route={route} back={{ href: '#/resumes', label: 'Resumes' }} title="Master resume" sub="Edits here apply to every new tailoring" />
       <div className="split flip">
         <section className="l">
           <div className="between"><h1 className="title" style={{ fontSize: 26 }}>Master resume</h1><div className="row"><button className="btn sm" onClick={save} disabled={saved}>{saved ? 'Saved' : 'Save changes'}</button></div></div>

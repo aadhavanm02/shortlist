@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useStore, updateProfile, resetProfile, usageOf, msUntilQuotaReset, formatDuration, exportProfile, setActive, getSaveError } from '../lib/store.js';
-import { TopBar, Icon, Avatar, Modal, Field, Banner } from '../components/ui.jsx';
+import { TopBar, Icon, Avatar, Modal, Field, Banner, useMobile } from '../components/ui.jsx';
 import { downloadBlob } from '../lib/pdfDoc.jsx';
 import { useAppVersion } from '../lib/native.js';
 
@@ -23,6 +23,7 @@ export default function Settings({ pid, route }) {
   const [confirm, setConfirm] = useState(false);
   const u = usageOf(p);
   const version = useAppVersion();
+  const mobile = useMobile();
 
   const save = () => {
     updateProfile(pid, (pp) => {
@@ -41,9 +42,9 @@ export default function Settings({ pid, route }) {
 
   return (
     <div className="app">
-      <TopBar pid={pid} route={route} />
+      <TopBar pid={pid} route={route} title="Settings" />
       <main className="main narrow">
-        <h1 className="title">Settings</h1>
+        {mobile ? null : <h1 className="title">Settings</h1>}
         {err ? <Banner tone="err">{err}</Banner> : null}
         <section className="card" style={{ padding: '8px 28px 20px', gap: 0 }}>
           <div className="row" style={{ padding: '16px 0', borderBottom: '1px solid var(--line)', flexWrap: 'nowrap', gap: 14 }}>

@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useStore, updateProfile } from '../lib/store.js';
-import { TopBar, Icon, Empty, Modal } from '../components/ui.jsx';
+import { TopBar, Icon, Empty, Modal, useMobile } from '../components/ui.jsx';
 import { findJob } from '../lib/jobs.js';
 import { buildPdf, downloadBlob } from '../lib/pdfDoc.jsx';
 
 export default function Resumes({ pid, route }) {
+  const mobile = useMobile();
   const p = useStore((s) => s.profiles[pid]);
   const [busy, setBusy] = useState(null);
   const [del, setDel] = useState(null);
@@ -14,9 +15,9 @@ export default function Resumes({ pid, route }) {
   const thumb = <div style={{ width: 36, height: 46, flex: 'none', borderRadius: 4, border: '1px solid var(--line)', borderTop: '3px solid var(--acc)' }} />;
   return (
     <div className="app">
-      <TopBar pid={pid} route={route} />
+      <TopBar pid={pid} route={route} title="Resumes" sub="Every tailored version is kept here" />
       <main className="main">
-        <div className="col" style={{ gap: 6 }}><h1 className="title">Resumes</h1><p className="sub">Your master resume and every tailored version.</p></div>
+        {mobile ? null : <div className="col" style={{ gap: 6 }}><h1 className="title">Resumes</h1><p className="sub">Your master resume and every tailored version.</p></div>}
         {p.resume ? (
           <div className="card tight" style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
             {thumb}
