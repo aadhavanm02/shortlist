@@ -1,8 +1,10 @@
 import { useStore, setActive } from '../lib/store.js';
 import { Logo, Avatar, Icon } from '../components/ui.jsx';
+import { useAppVersion } from '../lib/native.js';
 
 export default function Profiles() {
   const profiles = useStore((s) => s.profiles);
+  const version = useAppVersion();
   const open = (id) => { setActive(id); location.hash = profiles[id].setup ? '#/jobs' : '#/setup'; };
   return (
     <div className="app">
@@ -29,7 +31,7 @@ export default function Profiles() {
           })}
         </div>
       </main>
-      <footer style={{ padding: 20, textAlign: 'center' }} className="small">Two profiles only. Switch anytime from the top bar.</footer>
+      <footer style={{ padding: 20, textAlign: 'center' }} className="small">Two profiles only. Switch anytime from Settings.<br />{version} · <a href="../changelog.html" target="_blank" rel="noreferrer">What's new</a></footer>
     </div>
   );
 }

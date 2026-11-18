@@ -1,4 +1,5 @@
 // Android (Capacitor) helpers. On the web these fall back to normal browser behaviour.
+import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 
 export const isNative = Capacitor.isNativePlatform();
@@ -70,4 +71,15 @@ export async function setupNative() {
   document.documentElement.classList.add('native');
   try { await setupBackButton(); } catch { /* optional */ }
   try { await scheduleMorningReminder(true); } catch { /* notifications are optional */ }
+}
+
+// "Version 1.0.6" in the Android app, or the build date on the web
+export function useAppVersion() {
+  const [v, setV] = useState('');
+  useEffect(() => {
+    const web = `Web app · updated ${new Date(__BUILD_DATE__).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+    if (!isNative) { setV(web); return; }
+    import('@capacitor/app').then(({ App }) => App.getInfo()).then((i) => setV(`Android app · version ${i.version}`)).catch(() => setV('Android app'));
+  }, []);
+  return v;
 }

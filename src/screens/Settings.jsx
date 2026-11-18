@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useStore, updateProfile, resetProfile, usageOf, msUntilQuotaReset, formatDuration, exportProfile, setActive, getSaveError } from '../lib/store.js';
 import { TopBar, Icon, Avatar, Modal, Field, Banner } from '../components/ui.jsx';
 import { downloadBlob } from '../lib/pdfDoc.jsx';
+import { useAppVersion } from '../lib/native.js';
 
 function Bar({ label, used, total, note, grey }) {
   const pct = total ? Math.min(100, Math.round((used / total) * 100)) : 0;
@@ -21,6 +22,7 @@ export default function Settings({ pid, route }) {
   const [saved, setSaved] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const u = usageOf(p);
+  const version = useAppVersion();
 
   const save = () => {
     updateProfile(pid, (pp) => {
@@ -88,6 +90,7 @@ export default function Settings({ pid, route }) {
           <button className="btn" onClick={save}>{saved ? '✓ Saved' : 'Save settings'}</button>
         </div>
         <span className="small">Export keeps your preferences and master resume in a file you can load on another device.</span>
+        <div className="between" style={{ borderTop: '1px solid var(--line)', paddingTop: 16 }}><span className="small">{version}</span><a href="../changelog.html" target="_blank" rel="noreferrer" style={{ fontSize: 14, fontWeight: 600 }}>What's new</a></div>
       </main>
       {confirm ? (
         <Modal onClose={() => setConfirm(false)} labelledBy="rst">

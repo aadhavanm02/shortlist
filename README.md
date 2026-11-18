@@ -57,7 +57,7 @@ npm run dev      # local dev server
 npm run build    # production build in dist/
 ```
 
-Pushing to `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`. In the repo, set **Settings → Pages → Source** to **GitHub Actions** once.
+Pushing to `main` deploys to GitHub Pages through `.github/workflows/deploy.yml`. The site has a home page (`index.html`), the web app (`app/index.html`, served at `/shortlist/app/`), the Android download page (`public/android.html`) and the changelog (`public/changelog.html`, update it with each release). In the repo, set **Settings → Pages → Source** to **GitHub Actions** once.
 
 ## Notes
 

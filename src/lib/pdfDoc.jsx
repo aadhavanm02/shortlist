@@ -4,11 +4,19 @@ import { isNative, saveNative } from './native.js';
 import { segments } from './resume.js';
 import { countPages } from './pdfText.js';
 
-const base = new URL('./fonts/', document.baseURI).href;
-Font.register({ family: 'Manrope', fonts: [{ src: base + 'manrope-latin-700-normal.woff', fontWeight: 700 }, { src: base + 'manrope-latin-800-normal.woff', fontWeight: 800 }] });
+// Imported as URLs so Vite resolves them from any page path (/ or /app/)
+import manrope700 from '../assets/pdf-fonts/manrope-latin-700-normal.woff?url';
+import manrope800 from '../assets/pdf-fonts/manrope-latin-800-normal.woff?url';
+import open400 from '../assets/pdf-fonts/open-sans-latin-400-normal.woff?url';
+import open600 from '../assets/pdf-fonts/open-sans-latin-600-normal.woff?url';
+import open700 from '../assets/pdf-fonts/open-sans-latin-700-normal.woff?url';
+import open400i from '../assets/pdf-fonts/open-sans-latin-400-italic.woff?url';
+
+const abs = (u) => new URL(u, document.baseURI).href;
+Font.register({ family: 'Manrope', fonts: [{ src: abs(manrope700), fontWeight: 700 }, { src: abs(manrope800), fontWeight: 800 }] });
 Font.register({ family: 'OpenSans', fonts: [
-  { src: base + 'open-sans-latin-400-normal.woff', fontWeight: 400 }, { src: base + 'open-sans-latin-600-normal.woff', fontWeight: 600 },
-  { src: base + 'open-sans-latin-700-normal.woff', fontWeight: 700 }, { src: base + 'open-sans-latin-400-italic.woff', fontWeight: 400, fontStyle: 'italic' }] });
+  { src: abs(open400), fontWeight: 400 }, { src: abs(open600), fontWeight: 600 },
+  { src: abs(open700), fontWeight: 700 }, { src: abs(open400i), fontWeight: 400, fontStyle: 'italic' }] });
 Font.registerHyphenationCallback((w) => [w]);
 
 const ACC = '#F06434', INK = '#1F1D24', TXT = '#3B3941', MUT = '#6A6670', LINE = '#FBDCCF';
