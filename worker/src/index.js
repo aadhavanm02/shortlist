@@ -32,6 +32,7 @@ async function relay(res, origin) {
   return new Response(res.body, { status: res.status, headers: h });
 }
 
+// A missing key answers 424, so the app never confuses it with a provider's 503 "busy".
 export default {
   async fetch(req, env) {
     const origin = req.headers.get('Origin') || '';
@@ -49,7 +50,7 @@ export default {
     // POST /gemini/<model>  body = Gemini generateContent body
     const gm = path.match(/^\/gemini\/([\w.-]+)$/);
     if (gm && req.method === 'POST') {
-      if (!env.GEMINI_KEY) return json({ error: 'nokey' }, 503, origin);
+      if (!env.GEMINI_KEY) return json({ error: 'nokey' }, 424, origin);
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${gm[1]}:generateContent`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_KEY }, body: req.body,
       });
@@ -58,7 +59,7 @@ export default {
 
     // POST /groq  body = OpenAI-style chat completions body
     if (path === '/groq' && req.method === 'POST') {
-      if (!env.GROQ_KEY) return json({ error: 'nokey' }, 503, origin);
+      if (!env.GROQ_KEY) return json({ error: 'nokey' }, 424, origin);
       const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env.GROQ_KEY}` }, body: req.body,
       });
@@ -67,7 +68,7 @@ export default {
 
     // GET /jsearch?<JSearch search-v2 query params>
     if (path === '/jsearch' && req.method === 'GET') {
-      if (!env.RAPIDAPI_KEY) return json({ error: 'nokey' }, 503, origin);
+      if (!env.RAPIDAPI_KEY) return json({ error: 'nokey' }, 424, origin);
       const res = await fetch(`https://jsearch.p.rapidapi.com/search-v2${url.search}`, {
         headers: { 'X-RapidAPI-Key': env.RAPIDAPI_KEY, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' },
       });
@@ -76,7 +77,7 @@ export default {
 
     // GET /adzuna?<Adzuna search params, without app_id/app_key>
     if (path === '/adzuna' && req.method === 'GET') {
-      if (!env.ADZUNA_ID || !env.ADZUNA_KEY) return json({ error: 'nokey' }, 503, origin);
+      if (!env.ADZUNA_ID || !env.ADZUNA_KEY) return json({ error: 'nokey' }, 424, origin);
       const q = new URLSearchParams(url.search);
       q.set('app_id', env.ADZUNA_ID); q.set('app_key', env.ADZUNA_KEY);
       const res = await fetch(`https://api.adzuna.com/v1/api/jobs/in/search/1?${q}`);

@@ -4,10 +4,24 @@ import { API } from './api.js';
 import { lines, validPath, getPath, stripDashes } from './resume.js';
 
 export class AIError extends Error {
-  constructor(kind, msg) { super(msg); this.kind = kind; } // kind: nokey | quota | network | bad | server
+  constructor(kind, msg) { super(msg); this.kind = kind; } // kind: nokey | quota | busy | network | bad | server
 }
 
-async function gemini(model, system, user, timeoutMs = 60000) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const BUSY = [500, 502, 503, 504];
+
+// Gemini sometimes answers 503 "overloaded" for a few seconds; retry before giving up
+async function gemini(model, system, user) {
+  for (let attempt = 0; ; attempt++) {
+    try { return await geminiOnce(model, system, user); }
+    catch (e) {
+      if (!(e instanceof AIError) || e.kind !== 'busy' || attempt >= 2) throw e;
+      await sleep(attempt ? 4000 : 1500);
+    }
+  }
+}
+
+async function geminiOnce(model, system, user, timeoutMs = 60000) {
   const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);
   let res;
   try {
@@ -24,7 +38,8 @@ async function gemini(model, system, user, timeoutMs = 60000) {
     throw new AIError('network', e.name === 'AbortError' ? 'Gemini took too long to respond.' : 'Could not reach Gemini. Check your internet.');
   } finally { clearTimeout(t); }
   if (res.status === 429) throw new AIError('quota', 'Gemini says the free limit for this model is used up.');
-  if (res.status === 503) throw new AIError('nokey', 'The app\'s Gemini key is not set up yet.');
+  if (res.status === 424) throw new AIError('nokey', 'The app\'s Gemini key is not set up yet.');
+  if (BUSY.includes(res.status)) throw new AIError('busy', 'Gemini is busy right now. Try again in a minute.');
   if (res.status === 400 || res.status === 403) {
     const body = await res.text();
     if (/API key|API_KEY|permission/i.test(body)) throw new AIError('nokey', 'Gemini rejected the app\'s key. It needs to be replaced in the Worker.');
@@ -47,7 +62,8 @@ async function groq(model, system, user) {
     });
   } catch { throw new AIError('network', 'Could not reach Groq. Check your internet.'); }
   if (res.status === 429) throw new AIError('quota', 'Groq says the free limit is used up for now.');
-  if (res.status === 503) throw new AIError('nokey', 'The backup AI (Groq) is not set up.');
+  if (res.status === 424) throw new AIError('nokey', 'The backup AI (Groq) is not set up.');
+  if (BUSY.includes(res.status)) throw new AIError('busy', 'Groq is busy right now. Try again in a minute.');
   if (res.status === 401) throw new AIError('nokey', 'Groq rejected the app\'s key.');
   if (!res.ok) throw new AIError('server', `Groq error ${res.status}. Try again.`);
   const data = await res.json();
@@ -74,9 +90,16 @@ export async function callAI(profileId, engine, system, user) {
   if (engine === 'tailor' && u.tailor >= p.limits.tailorPerDay) throw new AIError('quota', 'All of today\'s tailorings are used.');
   if (engine === 'refine' && u.refine >= p.limits.refinePerDay) throw new AIError('quota', 'All of today\'s refinements are used.');
   const model = engine === 'tailor' ? p.models.tailor : p.models.refine;
-  const out = await gemini(model, system, user);
-  bumpUsage(profileId, engine === 'tailor' ? 'tailor' : 'refine');
-  return out;
+  try {
+    const out = await gemini(model, system, user);
+    bumpUsage(profileId, engine === 'tailor' ? 'tailor' : 'refine');
+    return out;
+  } catch (e) {
+    // Refinements and resume import fall back to Groq when Gemini is busy or out of free quota
+    if (engine !== 'refine' || !(e instanceof AIError) || !['busy', 'quota'].includes(e.kind) || /today's/.test(e.message)) throw e;
+    try { const out = await groq(p.models.groq, system, user); bumpUsage(profileId, 'groq'); return out; }
+    catch { throw e; }
+  }
 }
 
 const RULES = `Hard rules:
