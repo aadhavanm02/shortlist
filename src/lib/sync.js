@@ -69,6 +69,8 @@ let unsubs = [];
 let timer = null;
 let pushing = false;
 let dirtyAgain = false;
+let retryTimer = null;
+let currentUser = null;
 
 const userDoc = () => doc(db, 'users', uid);
 const feedDoc = () => doc(db, 'users', uid, 'parts', 'feed');
@@ -162,6 +164,8 @@ function stop() {
 
 async function start(user) {
   stop();
+  currentUser = user;
+  clearTimeout(retryTimer);
   uid = user.uid;
   const who = { name: (user.displayName || user.email || 'You').split(' ')[0], photo: user.photoURL || '', email: user.email || '' };
   const cached = getState().profiles[uid];
@@ -184,11 +188,20 @@ async function start(user) {
     // offline or rules not set: keep working from this device's copy
     if (!cached) setState((s) => { s.profiles = { [uid]: blankProfile(uid, who) }; s.active = uid; return s; });
     last = null;
-    setAuth({ status: 'in', error: e?.code === 'permission-denied' ? 'Signed in, but sync is blocked by the database rules. Your changes stay on this device for now.' : 'Working offline. Changes will sync when you are back online.' });
+    setAuth({ status: 'in', error: e?.code === 'permission-denied' ? 'Sync is paused: the database is not allowing access yet. Retrying…' : 'Working offline. Changes will sync when you are back online.' });
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(() => { if (currentUser && !last) start(currentUser); }, 20000);
   }
+}
+
+// Try again as soon as the app comes back to the front or the network returns
+if (typeof window !== 'undefined') {
+  const again = () => { if (currentUser && !last && document.visibilityState === 'visible') start(currentUser); };
+  document.addEventListener('visibilitychange', again);
+  window.addEventListener('online', again);
 }
 
 onAuthStateChanged(auth, (user) => {
   if (user) start(user);
-  else { stop(); setAuth({ status: 'out', user: null }); }
+  else { currentUser = null; clearTimeout(retryTimer); stop(); setAuth({ status: 'out', user: null }); }
 });

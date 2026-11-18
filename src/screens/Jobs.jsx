@@ -75,9 +75,6 @@ export default function Jobs({ pid, route, tab }) {
   }, [tab, q, flt, sort, feed, p.status]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const skip = (j) => { setJobStatus(pid, j, 'skipped'); showToast(`Skipped ${j.title}`, 'Undo', () => setJobStatus(pid, j, null)); };
-  const fetchedAt = feed?.fetchedAt ? new Date(feed.fetchedAt) : null;
-  const isToday = feed?.date && fetchedAt && fetchedAt.toDateString() === new Date().toDateString();
-  const sub = state.loading ? `Finding jobs for ${p.name}…` : feed ? `${newList.length} new ${newList.length === 1 ? 'match' : 'matches'} · ${isToday ? 'updated' : 'last updated'} ${fetchedAt.toLocaleString('en-IN', { weekday: isToday ? undefined : 'short', hour: 'numeric', minute: '2-digit' })}` : 'Jobs are fetched once a day when you open the app.';
 
   const tabLink = (id, label, n) => <a className={`tab ${tab === id ? 'on' : ''}`} role="tab" aria-selected={tab === id} href={`#/jobs?tab=${id}`} style={{ textDecoration: 'none' }}>{label} · {n}</a>;
 
@@ -170,9 +167,8 @@ export default function Jobs({ pid, route, tab }) {
       <TopBar pid={pid} route={route} />
       <main className="main">
         <div className="between" style={{ alignItems: 'flex-end' }}>
-          <div className="col" style={{ gap: 6 }}><h1 className="title">Today's jobs</h1><p className="sub">{sub}</p></div>
+          <h1 className="title">Today's jobs</h1>
           <div className="row">
-            <button className="btn secondary sm" onClick={() => load(true)} disabled={state.loading} title="Uses your job search quota"><Icon n="refresh" s={16} />Refresh</button>
             <a className="btn secondary sm" href="#/setup"><Icon n="sliders" s={16} />Preferences</a>
           </div>
         </div>
