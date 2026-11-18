@@ -32,7 +32,7 @@ async function gemini(key, model, system, user, timeoutMs = 60000) {
   }
   if (!res.ok) throw new AIError('server', `Gemini error ${res.status}. Try again.`);
   const data = await res.json();
-  const text = data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('') || '';
+  const text = data?.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text || '').join('') || '';
   return parseJSON(text);
 }
 

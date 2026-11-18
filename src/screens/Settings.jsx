@@ -83,7 +83,7 @@ export default function Settings({ pid, route }) {
           {pw('groq', 'Groq (optional backup)', <>Free at <a href="https://console.groq.com/keys" target="_blank" rel="noreferrer">console.groq.com</a>.</>)}
           {pw('rapidapi', 'JSearch via RapidAPI (job search)', <>Free plan at <a href="https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch" target="_blank" rel="noreferrer">RapidAPI JSearch</a>. Covers LinkedIn, Indeed, Glassdoor and company pages via Google for Jobs.</>)}
           <div className="grid2" style={{ gap: 12 }}>
-            {pw('adzunaId', 'Adzuna app ID (job search)', <>Free at <a href="https://developer.adzuna.com/" target="_blank" rel="noreferrer">developer.adzuna.com</a>.</>, 'App ID')}
+            {pw('adzunaId', 'Adzuna app ID (job search)', <>Optional. Free at <a href="https://developer.adzuna.com/" target="_blank" rel="noreferrer">developer.adzuna.com</a>. Adzuna may block requests from the browser; if it does, the job list says so and JSearch keeps working.</>, 'App ID')}
             {pw('adzunaKey', 'Adzuna app key', 'From the same Adzuna page.', 'App key')}
           </div>
         </section>

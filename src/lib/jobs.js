@@ -37,13 +37,17 @@ function salaryText(min, max) {
 }
 
 async function jsearch(key, query, signal) {
-  const url = `https://jsearch.p.rapidapi.com/search?query=${encodeURIComponent(query)}&page=1&num_pages=1&country=in&date_posted=3days`;
-  const res = await fetch(url, { signal, headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' } });
+  const url = `https://jsearch.p.rapidapi.com/search-v2?query=${encodeURIComponent(query)}&page=1&num_pages=1&country=in&date_posted=3days`;
+  let res;
+  try { res = await fetch(url, { signal, headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' } }); }
+  catch (e) { if (e.name === 'AbortError') throw e; throw new Error('Could not reach JSearch'); }
   if (res.status === 429) throw new Error('JSearch monthly limit reached');
   if (res.status === 401 || res.status === 403) throw new Error('JSearch key was rejected');
   if (!res.ok) throw new Error(`JSearch error ${res.status}`);
   const data = await res.json();
-  return (data.data || []).map((j) => {
+  // search-v2 returns { data: { jobs, cursor } }; the old /search returned { data: [...] }
+  const list = Array.isArray(data.data) ? data.data : (data.data?.jobs || []);
+  return list.map((j) => {
     let smin = null, smax = null;
     if (j.job_salary_currency === 'INR' || !j.job_salary_currency) {
       const f = j.job_salary_period === 'MONTH' ? 12 : j.job_salary_period === 'YEAR' ? 1 : 0;
@@ -64,7 +68,13 @@ async function jsearch(key, query, signal) {
 async function adzuna(id, key, what, where, signal) {
   const params = new URLSearchParams({ app_id: id, app_key: key, results_per_page: '20', what_phrase: what, max_days_old: '3', 'content-type': 'application/json' });
   if (where) params.set('where', where);
-  const res = await fetch(`https://api.adzuna.com/v1/api/jobs/in/search/1?${params}`, { signal });
+  let res;
+  try { res = await fetch(`https://api.adzuna.com/v1/api/jobs/in/search/1?${params}`, { signal }); }
+  catch (e) {
+    if (e.name === 'AbortError') throw e;
+    // Adzuna does not allow calls from browsers on some setups (CORS)
+    throw new Error('Adzuna blocked the request from the browser. JSearch still works');
+  }
   if (res.status === 401 || res.status === 403) throw new Error('Adzuna keys were rejected');
   if (res.status === 429) throw new Error('Adzuna daily limit reached');
   if (!res.ok) throw new Error(`Adzuna error ${res.status}`);
