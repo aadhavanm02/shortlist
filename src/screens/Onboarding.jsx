@@ -90,10 +90,10 @@ export default function Onboarding({ pid, editing }) {
         <header className="topbar"><Logo href="#/" /><span className="small">Setting up <b style={{ color: 'var(--ink)' }}>{p.name}</b></span></header>
       )}
       <main className="main narrow">
-        <div className="col" style={{ gap: 6 }}>
-          <h1 className="title">{editing && !mobile ? 'Job preferences' : 'What kind of job are you looking for?'}</h1>
+        {mobile ? null : <div className="col" style={{ gap: 6 }}>
+          <h1 className="title">{editing ? 'Job preferences' : 'What kind of job are you looking for?'}</h1>
           <p className="sub">We use these to find and rank up to {p.limits.jobsPerDay} jobs for you every day. You can change them later in Settings.</p>
-        </div>
+        </div>}
         {tried && errCount ? <Banner tone="err"><b>{errCount} {errCount === 1 ? 'thing' : 'things'} to fix</b> before we can find jobs.</Banner> : null}
 
         <section className="card" style={{ padding: mobile ? 18 : 28, gap: mobile ? 20 : 24 }}>

@@ -293,13 +293,13 @@ export default function JobDetail({ pid, id, route }) {
             <button className="btn sm" onClick={download} disabled={pdfBusy || over} aria-label="Download PDF"><Icon n="download" s={16} />{pdfBusy ? '…' : 'PDF'}</button>
           ) : (
             <>
-              {job.url ? <a className="iconbtn" href={job.url} target="_blank" rel="noreferrer" aria-label="Open original posting"><Icon n="ext" /></a> : null}
               {!p.status[id] ? <button className="iconbtn" aria-label="Skip this job" onClick={() => { setJobStatus(pid, job, 'skipped'); location.hash = '#/jobs'; }}><Icon n="x" /></button> : null}
             </>
           )}
         </AppBar>
         <div className="col" style={{ padding: '12px 16px 0', gap: 10, background: '#fff' }}>
           {!onResume ? <div className="row" style={{ gap: 6 }}><Score n={score} /><span className="chip ink">{job.salary}</span>{job.expText ? <span className="chip">{job.expText}</span> : null}<span className="chip">{job.ago ? `${job.ago} · ` : ''}{job.source}</span></div> : null}
+          {!onResume && job.url ? <a href={job.url} target="_blank" rel="noreferrer" className="row" style={{ gap: 6, fontSize: 14, fontWeight: 600, textDecoration: 'none', flexWrap: 'nowrap' }}><Icon n="ext" s={16} />View the original job post</a> : null}
           <div className="seg" role="tablist" style={{ marginBottom: 12 }}>
             <button role="tab" aria-selected={!onResume} className={!onResume ? 'on' : ''} onClick={() => setMtab('job')}>Job</button>
             <button role="tab" aria-selected={onResume} className={onResume ? 'on' : ''} onClick={() => setMtab('resume')}>{v ? 'Tailored resume' : 'Resume'}</button>

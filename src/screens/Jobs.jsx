@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useStore, setActive, usageOf } from '../lib/store.js';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useStore, setActive, updateProfile } from '../lib/store.js';
 import { fetchFeed, setJobStatus, pruneSkipped } from '../lib/jobs.js';
 import { TopBar, Icon, Banner, Empty, Score, Skeleton, Toggle, useToast, useMobile, Avatar, Modal } from '../components/ui.jsx';
 
-function JobCard({ j, extra, dim, mobile }) {
+function JobCard({ j, extra, dim, mobile, isNew }) {
   if (mobile) return (
     <a className={`job ${dim ? 'dim' : ''}`} href={`#/job/${j.id}`}>
       <div className="col" style={{ flex: 1, minWidth: 0, gap: 5 }}>
-        <div className="row" style={{ gap: 8 }}><span className="t">{j.title}</span>{j.dream ? <span className="chip blue">Dream company</span> : null}</div>
+        <div className="row" style={{ gap: 8 }}>{isNew ? <span className="chip acc" style={{ padding: '2px 8px', fontSize: 12 }}>New</span> : null}<span className="t">{j.title}</span>{j.dream ? <span className="chip blue">Dream company</span> : null}</div>
         <span style={{ fontSize: 14 }}>{j.company} · {j.location} · {j.mode}</span>
         <div className="meta"><span style={{ fontWeight: 600, color: 'var(--ink)' }}>{j.salary}</span>{j.expText ? <span>{j.expText}</span> : null}{j.ago ? <span>{j.ago}</span> : null}</div>
         {extra}
@@ -19,7 +19,7 @@ function JobCard({ j, extra, dim, mobile }) {
     <a className={`job ${dim ? 'dim' : ''}`} href={`#/job/${j.id}`}>
       <div className="logo-sq">{(j.company || '?')[0]}</div>
       <div className="col" style={{ flex: 1, minWidth: 0, gap: 5 }}>
-        <div className="row" style={{ gap: 8 }}><span className="t">{j.title}</span>{j.dream ? <span className="chip blue">Dream company</span> : null}</div>
+        <div className="row" style={{ gap: 8 }}>{isNew ? <span className="chip acc" style={{ padding: '2px 8px', fontSize: 12 }}>New</span> : null}<span className="t">{j.title}</span>{j.dream ? <span className="chip blue">Dream company</span> : null}</div>
         <span style={{ fontSize: 14 }}>{j.company} · {j.location} · {j.mode}</span>
         <div className="meta"><span style={{ fontWeight: 600, color: 'var(--ink)' }}>{j.salary}</span>{j.expText ? <span>{j.expText}</span> : null}{j.ago ? <span>{j.ago}</span> : null}<span>via {j.source}</span></div>
         {extra}
@@ -36,7 +36,14 @@ export default function Jobs({ pid, route, tab }) {
   const [sort, setSort] = useState('match');
   const [showFilters, setShowFilters] = useState(false);
   const [flt, setFlt] = useState({ office: true, hybrid: true, remote: true, salaryOnly: false, days: 3, src: '' });
-  const [showClose, setShowClose] = useState(false);
+  // Jobs you haven't seen before get a New badge and go to the top (snapshot taken when the screen opens)
+  const seenAtOpen = useRef(p.seen || null);
+  const isNew = (j) => !!seenAtOpen.current && !seenAtOpen.current[j.id];
+  useEffect(() => {
+    const ids = (p.feed?.list || []).map((j) => j.id);
+    if (!ids.length) return;
+    updateProfile(pid, (pp) => { const seen = { ...(pp.seen || {}) }; ids.forEach((id) => { if (!seen[id]) seen[id] = Date.now(); }); const cutoff = Date.now() - 30 * 86400000; Object.keys(seen).forEach((k) => { if (seen[k] < cutoff) delete seen[k]; }); pp.seen = seen; });
+  }, [p.feed?.fetchedAt]); // eslint-disable-line react-hooks/exhaustive-deps
   const [toast, showToast] = useToast();
   const mobile = useMobile();
 
@@ -50,7 +57,6 @@ export default function Jobs({ pid, route, tab }) {
   const feed = p.feed;
   const byStatus = (s) => Object.entries(p.status).filter(([, v]) => v.s === s).sort((a, b) => b[1].at - a[1].at).map(([id, v]) => ({ ...(p.jobCache[id] || { id, title: 'Job', company: '' }), at: v.at }));
   const newList = (feed?.list || []).filter((j) => !p.status[j.id]);
-  const closeList = (feed?.close || []).filter((j) => !p.status[j.id]);
   const applied = byStatus('applied'); const skipped = byStatus('skipped');
 
   const filtered = useMemo(() => {
@@ -63,6 +69,7 @@ export default function Jobs({ pid, route, tab }) {
       if (flt.src) list = list.filter((j) => (j.source || '').toLowerCase().includes(flt.src));
       if (sort === 'salary') list = [...list].sort((a, b) => (b.salMax || b.salMin || 0) - (a.salMax || a.salMin || 0));
       if (sort === 'new') list = [...list].sort((a, b) => new Date(b.posted || 0) - new Date(a.posted || 0));
+      list = [...list].sort((a, b) => Number(isNew(b)) - Number(isNew(a)));
     }
     return list;
   }, [tab, q, flt, sort, feed, p.status]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -102,7 +109,7 @@ export default function Jobs({ pid, route, tab }) {
             </>}
             {filtered.map((j) => (
               <div key={j.id} style={{ position: 'relative' }}>
-                <JobCard j={j} mobile={mobile} extra={tab === 'applied' ? <span className="small" style={{ color: 'var(--ok)', fontWeight: 600 }}>Applied {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}{p.versions[j.id] ? ' · resume saved' : ''}</span> : tab === 'skipped' ? <span className="small">Skipped {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · disappears after 7 days</span> : null} />
+                <JobCard j={j} mobile={mobile} isNew={tab === 'new' && isNew(j)} extra={tab === 'applied' ? <span className="small" style={{ color: 'var(--ok)', fontWeight: 600 }}>Applied {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}{p.versions[j.id] ? ' · resume saved' : ''}</span> : tab === 'skipped' ? <span className="small">Skipped {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · disappears after 7 days</span> : null} />
                 {tab === 'new' && !mobile ? <button className="iconbtn" style={{ position: 'absolute', right: 8, bottom: 8 }} aria-label={`Skip ${j.title} at ${j.company}`} title="Skip" onClick={() => skip(j)}><Icon n="x" s={18} /></button> : null}
                 {tab === 'skipped' ? <button className="btn secondary sm" style={{ position: 'absolute', right: 12, bottom: 12 }} onClick={() => setJobStatus(pid, j, null)}><Icon n="undo" s={16} />Restore</button> : null}
               </div>
@@ -117,17 +124,10 @@ export default function Jobs({ pid, route, tab }) {
             {!filtered.length && !q && tab === 'applied' ? <Empty icon="check" title="No applications yet">When you download a tailored resume and say you applied, the job moves here with the resume you sent.</Empty> : null}
             {!filtered.length && !q && tab === 'skipped' ? <Empty icon="x" title="Nothing skipped">Jobs you skip stay here for 7 days, in case you change your mind.</Empty> : null}
 
-            {tab === 'new' && closeList.length && !q ? (
-              showClose ? <>
-                <span className="label" style={{ marginTop: 8 }}>Close matches · each misses one filter</span>
-                {closeList.map((j) => <JobCard key={j.id} j={j} mobile={mobile} dim extra={<span className="small">Misses: {j.misses[0]}</span>} />)}
-              </> : <button className="btn secondary" style={{ alignSelf: 'flex-start', borderStyle: 'dashed' }} onClick={() => setShowClose(true)}>Show {closeList.length} close matches (just miss one filter)</button>
-            ) : null}
           </>
         )
   );
 
-  const u = usageOf(p); const left = Math.max(0, p.limits.tailorPerDay - u.tailor);
   const resetFlt = () => setFlt({ office: true, hybrid: true, remote: true, salaryOnly: false, days: 3, src: '' });
   const filterFields = (
     <>
@@ -141,9 +141,8 @@ export default function Jobs({ pid, route, tab }) {
     <div className="app">
       <header className="mhead">
         <div className="between" style={{ flexWrap: 'nowrap', alignItems: 'center' }}>
-          <div className="col" style={{ gap: 2, minWidth: 0 }}><h1>Today's jobs</h1><span className="small">{sub}</span></div>
+          <h1>Today's jobs</h1>
           <div className="row" style={{ flexWrap: 'nowrap', gap: 4 }}>
-            <button className="iconbtn" aria-label="Refresh jobs" onClick={() => load(true)} disabled={state.loading}><Icon n="refresh" /></button>
             <button className="avatar-btn" aria-label="Switch profile" onClick={() => { setActive(null); location.hash = '#/'; }}><Avatar id={pid} s={40} /></button>
           </div>
         </div>
@@ -151,7 +150,6 @@ export default function Jobs({ pid, route, tab }) {
         <div className="tabs" role="tablist">{tabLink('new', 'New', newList.length)}{tabLink('applied', 'Applied', applied.length)}{tabLink('skipped', 'Skipped', skipped.length)}</div>
       </header>
       <main className="main" style={{ padding: '14px 16px 24px', gap: 10 }}>
-        <div className="between" style={{ flexWrap: 'nowrap' }}><span className="row" style={{ gap: 8, fontSize: 12, fontWeight: 600, color: 'var(--txt)', flexWrap: 'nowrap' }}><span className={`dot ${left === 0 ? 'out' : left <= 3 ? 'low' : ''}`} />Tailorings left today: {left} of {p.limits.tailorPerDay}</span><a href="#/setup" style={{ fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>Preferences</a></div>
         {body}
       </main>
       {showFilters ? (

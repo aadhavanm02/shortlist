@@ -223,3 +223,14 @@ a.iconbtn { text-decoration: none; }
   .card { padding: 18px; border-radius: 14px; }
   .modal { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
 }
+
+/* phone list rows (Resumes, Settings) */
+.mlist { background: #fff; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+.mrow { display: flex; align-items: center; gap: 2px; padding: 6px 6px 6px 16px; min-height: 64px; border-top: 1px solid var(--line); }
+.mrow:first-child { border-top: 0; }
+.mrow-main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; padding: 8px 0; text-decoration: none; color: inherit; }
+.mrow-main:hover { color: inherit; }
+.mrow-t { font-weight: 700; color: var(--ink); font-size: 15px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.mrow-s { font-size: 13px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mrow .iconbtn { flex: none; color: var(--txt); }
+.mrow .chev { color: var(--mut); flex: none; padding-right: 8px; display: flex; }

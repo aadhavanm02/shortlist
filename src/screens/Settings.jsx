@@ -41,6 +41,74 @@ export default function Settings({ pid, route }) {
   const num = (key, label, hint) => <Field label={label} hint={hint}><input className="input" inputMode="numeric" value={lim[key]} onChange={(e) => setLim({ ...lim, [key]: e.target.value.replace(/\D/g, '') })} /></Field>;
   const err = getSaveError();
 
+  const resetModal = confirm ? (
+    <Modal onClose={() => setConfirm(false)} labelledBy="rst">
+      <h2 id="rst">Reset {p.name}'s profile?</h2>
+      <p className="sub" style={{ lineHeight: 1.5 }}>This removes preferences, master resume, saved versions and job history from this browser. Downloaded PDFs stay on your device. This can't be undone.</p>
+      <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn secondary" onClick={() => setConfirm(false)}>Cancel</button><button className="btn dangerfill" onClick={() => { resetProfile(pid); location.hash = '#/'; }}>Reset profile</button></div>
+    </Modal>
+  ) : null;
+  const chev = <span className="chev"><Icon n="chev" s={18} /></span>;
+  const meterRow = (label, used, total) => (
+    <div className="mrow" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8, padding: '14px 16px' }}>
+      <div className="between" style={{ flexWrap: 'nowrap' }}><span className="mrow-t">{label}</span><span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)' }}>{used} of {total}</span></div>
+      <div className="progress"><div style={{ width: `${total ? Math.min(100, Math.round((used / total) * 100)) : 0}%` }} /></div>
+    </div>
+  );
+
+  if (mobile) return (
+    <div className="app">
+      <TopBar pid={pid} route={route} title="Settings" />
+      <main className="main" style={{ padding: '14px 16px 24px', gap: 10 }}>
+        {err ? <Banner tone="err">{err}</Banner> : null}
+        <div className="mlist">
+          <button className="mrow" style={{ width: '100%', background: 'none', border: 0, textAlign: 'left', cursor: 'pointer', gap: 12, padding: '12px 6px 12px 16px' }} onClick={() => { setActive(null); location.hash = '#/'; }}>
+            <Avatar id={pid} s={48} />
+            <span className="mrow-main"><span className="mrow-t" style={{ fontSize: 17 }}>{p.name}</span><span className="mrow-s">{p.role} · Switch profile</span></span>
+            {chev}
+          </button>
+        </div>
+
+        <span className="label" style={{ margin: '10px 4px 0' }}>Job search</span>
+        <div className="mlist">
+          <a className="mrow" href="#/setup" style={{ textDecoration: 'none' }}><span className="mrow-main"><span className="mrow-t">Job preferences</span><span className="mrow-s">{p.prefs.titles.length} titles · {p.prefs.cities.join(', ') || 'Remote'}{p.prefs.expMin || p.prefs.expMax ? ` · ${p.prefs.expMin || 0}–${p.prefs.expMax || '?'} yrs` : ''}</span></span>{chev}</a>
+          <a className="mrow" href="#/resumes/master" style={{ textDecoration: 'none' }}><span className="mrow-main"><span className="mrow-t">Master resume</span><span className="mrow-s">{p.resumeFile || p.resume?.name || 'Not added'}</span></span>{chev}</a>
+        </div>
+
+        <span className="label" style={{ margin: '10px 4px 0' }}>AI usage today · resets in {formatDuration(msUntilQuotaReset())}</span>
+        <div className="mlist">
+          {meterRow('Tailorings', u.tailor, p.limits.tailorPerDay)}
+          {meterRow('Refinements', u.refine, p.limits.refinePerDay)}
+        </div>
+
+        <span className="label" style={{ margin: '10px 4px 0' }}>App</span>
+        <div className="mlist">
+          {!inst.installed ? (inst.canPrompt
+            ? <button className="mrow" style={{ width: '100%', background: 'none', border: 0, textAlign: 'left', cursor: 'pointer' }} onClick={inst.install}><span className="mrow-main"><span className="mrow-t">Install Shortlist</span><span className="mrow-s">Open it from your home screen</span></span><span className="chev"><Icon n="download" s={18} /></span></button>
+            : <a className="mrow" href="../install.html" style={{ textDecoration: 'none' }}><span className="mrow-main"><span className="mrow-t">Install Shortlist</span><span className="mrow-s">Open it from your home screen</span></span>{chev}</a>) : null}
+          <a className="mrow" href="../changelog.html" style={{ textDecoration: 'none' }}><span className="mrow-main"><span className="mrow-t">What's new</span><span className="mrow-s">{version}</span></span>{chev}</a>
+          <button className="mrow" style={{ width: '100%', background: 'none', border: 0, borderTop: '1px solid var(--line)', textAlign: 'left', cursor: 'pointer' }} onClick={() => downloadBlob(new Blob([exportProfile(pid)], { type: 'application/json' }), `shortlist-${p.name.toLowerCase()}.json`)}><span className="mrow-main"><span className="mrow-t">Export profile</span><span className="mrow-s">Preferences and master resume as a file</span></span><span className="chev"><Icon n="download" s={18} /></span></button>
+        </div>
+
+        <details className="mlist" style={{ padding: '0 16px' }}>
+          <summary style={{ minHeight: 56, display: 'flex', alignItems: 'center', fontWeight: 700, color: 'var(--ink)', cursor: 'pointer' }}>Limits and models</summary>
+          <div className="col" style={{ gap: 14, paddingBottom: 16 }}>
+            {num('jobsPerDay', 'Jobs per day', 'Top matches shown each day.')}
+            {num('refinePerJob', 'Refinements per job', 'Chat messages for one job.')}
+            {num('tailorPerDay', 'Tailorings per day', 'Shared Gemini Flash limit is about 20 a day.')}
+            {num('refinePerDay', 'Refinements per day', 'Shared Flash-Lite limit is about 500 a day.')}
+            <Field label="Tailoring model"><input className="input" value={m.tailor} onChange={(e) => setM({ ...m, tailor: e.target.value })} /></Field>
+            <Field label="Refinement model"><input className="input" value={m.refine} onChange={(e) => setM({ ...m, refine: e.target.value })} /></Field>
+            <button className="btn full" onClick={save}>{saved ? '✓ Saved' : 'Save'}</button>
+          </div>
+        </details>
+
+        <button className="btn danger full" style={{ marginTop: 6 }} onClick={() => setConfirm(true)}>Reset this profile</button>
+      </main>
+      {resetModal}
+    </div>
+  );
+
   return (
     <div className="app">
       <TopBar pid={pid} route={route} title="Settings" />
