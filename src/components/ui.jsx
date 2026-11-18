@@ -107,8 +107,9 @@ export function Modal({ children, onClose, labelledBy }) {
     const prev = document.activeElement;
     ref.current?.querySelector('button, a, input, textarea')?.focus();
     const k = (e) => { if (e.key === 'Escape') onClose?.(); };
-    document.addEventListener('keydown', k);
-    return () => { document.removeEventListener('keydown', k); prev?.focus?.(); };
+    const b = (e) => { e.preventDefault(); onClose?.(); };
+    document.addEventListener('keydown', k); addEventListener('appback', b);
+    return () => { document.removeEventListener('keydown', k); removeEventListener('appback', b); prev?.focus?.(); };
   }, [onClose]);
   return <div className="overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.(); }}><div className="modal" role="dialog" aria-modal="true" aria-labelledby={labelledBy} ref={ref}>{children}</div></div>;
 }

@@ -5,7 +5,7 @@ import { useStatus } from '../lib/api.js';
 import { callAI, tailorPrompt, cleanTailor, refinePrompt, trimPrompt, AIError, dropLabel } from '../lib/ai.js';
 import { setPath, getPath, validPath, pathLabel, normalizeResume, stripDashes, segments } from '../lib/resume.js';
 import { buildPdf, downloadBlob } from '../lib/pdfDoc.jsx';
-import { TopBar, Icon, Banner, Empty, Score, Modal } from '../components/ui.jsx';
+import { TopBar, Icon, Banner, Empty, Score, Modal, useMobile, AppBar } from '../components/ui.jsx';
 import ResumeView from '../components/ResumeView.jsx';
 
 const H = { fontFamily: 'var(--h)', fontWeight: 800, color: 'var(--ink)' };
@@ -16,6 +16,8 @@ function saveVersion(pid, id, fn) { updateProfile(pid, (p) => { fn(p.versions[id
 export default function JobDetail({ pid, id, route }) {
   const p = useStore((s) => s.profiles[pid]);
   const groqOn = !!useStatus()?.groq;
+  const mobile = useMobile();
+  const [mtab, setMtab] = useState(p.versions[id] ? 'resume' : 'job');
   const job = findJob(p, id);
   const v = p.versions[id];
   const [phase, setPhase] = useState(null);   // null | 'working' | {error}
@@ -32,7 +34,7 @@ export default function JobDetail({ pid, id, route }) {
   const master = useMemo(() => (p.resume ? normalizeResume(p.resume) : null), [p.resume]);
   const onFit = (f) => setFit((o) => (o.overLines === f.overLines && o.size === f.size ? o : f));
 
-  useEffect(() => { if (v && tab === 'job' && !phase) setTab('sugg'); }, [!!v]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (v && tab === 'job' && !phase) setTab('sugg'); if (v) setMtab('resume'); }, [!!v]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!job) return (<div className="app"><TopBar pid={pid} route={route} back={{ href: '#/jobs', label: 'Back to jobs' }} /><main className="main"><Empty title="This job isn't in your list any more">It may be from an older day's list. Go back to today's jobs.</Empty></main></div>);
   if (!p.resume) return (<div className="app"><TopBar pid={pid} route={route} back={{ href: '#/jobs', label: 'Back to jobs' }} /><main className="main"><Empty title="Add your resume first" actions={<a className="btn" href="#/setup">Upload resume</a>}>Tailoring starts from your master resume.</Empty></main></div>);
@@ -238,6 +240,87 @@ export default function JobDetail({ pid, id, route }) {
     </div>
   ) : null;
 
+  const modals = (
+    <>
+      {edit ? <EditModal path={edit} r={resume} onSave={saveEdit} onClose={() => setEdit(null)} /> : null}
+      {limit ? <LimitModal p={p} u={u} groqOn={groqOn} onClose={() => setLimit(false)} tailor={tailor} /> : null}
+      {applyQ ? <ApplyModal job={job} name={applyQ} onClose={() => setApplyQ(null)} onYes={() => { setJobStatus(pid, job, 'applied'); setApplyQ(null); location.hash = '#/jobs?tab=applied'; }} /> : null}
+    </>
+  );
+
+  if (mobile) {
+    if (chat && v) return <ChatPanel mobile pid={pid} id={id} job={job} v={v} refineLeft={refineLeft} onClose={() => { setChat(false); setMtab('resume'); }} />;
+    const score = v?.atsAfter && v.suggestions.every((x) => x.state !== 'open') ? v.atsAfter : job.score;
+    const applied = p.status[id]?.s === 'applied';
+    const jobBody = (
+      <>
+        {job.emails?.length ? (
+          <div className="row" style={{ background: '#fff', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', flexWrap: 'nowrap' }}>
+            <Icon n="mail" s={18} />
+            <div className="col" style={{ flex: 1, gap: 0, minWidth: 0 }}><span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis' }}>{job.emails[0]}</span><span className="small" style={{ fontSize: 12 }}>Found in the job post</span></div>
+            <button className="btn secondary sm" onClick={() => navigator.clipboard?.writeText(job.emails[0])}>Copy</button>
+          </div>
+        ) : null}
+        {v?.missing?.length ? <div className="col" style={{ gap: 6 }}><span className="label" style={{ color: '#8F3412' }}>Missing from your resume</span><div className="row" style={{ gap: 6 }}>{v.missing.map((k) => <span key={k} className="chip acc">{k}</span>)}</div></div> : null}
+        {(v?.have?.length ? v.have : job.matched || []).length ? <div className="col" style={{ gap: 6 }}><span className="label" style={{ color: 'var(--ok)' }}>Already in your resume</span><div className="row" style={{ gap: 6 }}>{(v?.have?.length ? v.have : job.matched).map((k) => <span key={k} className="chip ok">{k}</span>)}</div></div> : null}
+        {job.short ? (
+          <div className="col" style={{ gap: 10 }}>
+            <Banner tone="info" icon="info">This source only shows part of the description. Paste the full one for better tailoring.</Banner>
+            <textarea className="textarea" rows={4} placeholder="Paste the full job description" value={pasteJD} onChange={(e) => setPasteJD(e.target.value)} aria-label="Full job description" />
+            <div><button className="btn secondary sm" disabled={pasteJD.trim().length < 200} onClick={() => { updateProfile(pid, (pp) => { const upd = (j) => { if (j && j.id === id) { j.description = pasteJD.trim(); j.short = false; } }; pp.feed?.list.forEach(upd); pp.feed?.close.forEach(upd); upd(pp.jobCache[id]); }); setPasteJD(''); }}>Use this description</button></div>
+          </div>
+        ) : null}
+        <h2 style={{ fontSize: 16 }}>About the role</h2>
+        <div style={{ fontSize: 14, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{job.description || 'No description was provided. Open the original posting to read it.'}</div>
+        {applied ? <span className="chip ok" style={{ alignSelf: 'flex-start' }}>Applied</span> : <button className="btn secondary" onClick={() => { setJobStatus(pid, job, 'applied'); location.hash = '#/jobs?tab=applied'; }}>Mark as applied</button>}
+      </>
+    );
+    const resumeBody = (
+      <>
+        {v ? suggPanel : null}
+        {over ? <Banner action={v && refineLeft ? <button className="btn secondary sm" onClick={askTrims} disabled={trims === 'loading'}>{trims === 'loading' ? 'Thinking…' : 'Suggest trims'}</button> : null}><b>Runs onto a second page</b> by about {fit.overLines} lines. Download unlocks once it fits.</Banner> : null}
+        {Array.isArray(trims) && over ? trims.map((t, i) => <div key={i} className="sugg"><b style={{ color: 'var(--ink)', fontSize: 14 }}>{t.title}</b><span className="small">{t.detail}</span><div><button className="btn sm" onClick={() => { applyTrim(t); setTrims(null); }}>Apply trim</button></div></div>) : null}
+        {trims?.error ? <Banner tone="err">{trims.error}</Banner> : null}
+        <div className="between"><span className="label">{v ? 'Preview · tap a line to edit' : 'Your master resume · tap a line to edit'}</span>{v?.undo?.length ? <button className="btn ghost sm" onClick={undo}><Icon n="undo" s={16} />Undo</button> : null}</div>
+        <ResumeView r={resume} highlight={highlight} onEdit={(path) => setEdit(path)} onFit={onFit} dim={phase === 'working'} />
+      </>
+    );
+    const onResume = mtab === 'resume';
+    return (
+      <div className="app" style={{ background: onResume ? 'var(--bg)' : '#fff' }}>
+        <AppBar back="#/jobs" title={onResume && v ? 'Tailored resume' : job.title} sub={onResume && v ? `${job.company} · ${v.atsBefore || job.score}% → ${v.atsAfter || score}%` : `${job.company} · ${job.location} · ${job.mode}`}>
+          {onResume ? (
+            <button className="btn sm" onClick={download} disabled={pdfBusy || over} aria-label="Download PDF"><Icon n="download" s={16} />{pdfBusy ? '…' : 'PDF'}</button>
+          ) : (
+            <>
+              {job.url ? <a className="iconbtn" href={job.url} target="_blank" rel="noreferrer" aria-label="Open original posting"><Icon n="ext" /></a> : null}
+              {!p.status[id] ? <button className="iconbtn" aria-label="Skip this job" onClick={() => { setJobStatus(pid, job, 'skipped'); location.hash = '#/jobs'; }}><Icon n="x" /></button> : null}
+            </>
+          )}
+        </AppBar>
+        <div className="col" style={{ padding: '12px 16px 0', gap: 10, background: '#fff' }}>
+          {!onResume ? <div className="row" style={{ gap: 6 }}><Score n={score} /><span className="chip ink">{job.salary}</span>{job.expText ? <span className="chip">{job.expText}</span> : null}<span className="chip">{job.ago ? `${job.ago} · ` : ''}{job.source}</span></div> : null}
+          <div className="seg" role="tablist" style={{ marginBottom: 12 }}>
+            <button role="tab" aria-selected={!onResume} className={!onResume ? 'on' : ''} onClick={() => setMtab('job')}>Job</button>
+            <button role="tab" aria-selected={onResume} className={onResume ? 'on' : ''} onClick={() => setMtab('resume')}>{v ? 'Tailored resume' : 'Resume'}</button>
+          </div>
+        </div>
+        <main className="col" style={{ flex: 1, padding: '14px 16px 24px', gap: 12, paddingBottom: onResume && v ? 96 : 24 }}>
+          {phase === 'working' ? working : errorCard || (onResume ? resumeBody : jobBody)}
+        </main>
+        {!v && phase !== 'working' && !errorCard ? (
+          <div className="actionbar">
+            <button className="btn lg full" onClick={startTailor} disabled={!navigator.onLine}><Icon n="wand" s={18} />Tailor resume to this job</button>
+            <span className="small" style={{ textAlign: 'center', fontSize: 12 }}>{navigator.onLine ? `Uses 1 of ${tailorLeft} tailorings left today` : 'Tailoring needs internet.'}</span>
+          </div>
+        ) : null}
+        {v && !onResume ? <div className="actionbar"><button className="btn lg full" onClick={() => setMtab('resume')}><Icon n="file" s={18} />View tailored resume</button></div> : null}
+        {v && onResume && phase !== 'working' ? <button className="fab" onClick={() => setChat(true)}><Icon n="chat" s={18} />Refine</button> : null}
+        {modals}
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <TopBar pid={pid} route={route} back={back} />
@@ -254,32 +337,38 @@ export default function JobDetail({ pid, id, route }) {
       )}
       {v && !chat ? <button className="fab" onClick={() => setChat(true)}><Icon n="chat" s={18} />Refine with chat</button> : null}
 
-      {edit ? <EditModal path={edit} r={resume} onSave={saveEdit} onClose={() => setEdit(null)} /> : null}
-      {limit ? (
-        <Modal onClose={() => setLimit(false)} labelledBy="lim">
-          <h2 id="lim">{u.tailor >= p.limits.tailorPerDay ? `You've used today's ${p.limits.tailorPerDay} tailorings` : "Gemini's free tailoring limit is used up for today"}</h2>
-          <p className="sub">You can still tailor with a backup model. Results may be a little less polished, so review them closely.</p>
-          <div className="col" style={{ background: 'var(--bg)', borderRadius: 12, padding: 14, fontSize: 14 }}>
-            <div className="between"><span>Gemini Flash (tailoring)</span><b style={{ color: 'var(--err)' }}>Used up · resets in {formatDuration(msUntilQuotaReset())}</b></div>
-            <div className="between"><span>Gemini Flash-Lite</span><b style={{ color: 'var(--ok)' }}>{Math.max(0, p.limits.refinePerDay - u.refine)} left</b></div>
-            <div className="between"><span>Groq</span><b style={{ color: groqOn ? 'var(--ok)' : 'var(--mut)' }}>{groqOn ? 'Available' : 'Not set up'}</b></div>
-          </div>
-          <div className="row" style={{ justifyContent: 'flex-end' }}>
-            <button className="btn secondary" onClick={() => setLimit(false)}>Wait till tomorrow</button>
-            {groqOn ? <button className="btn secondary" onClick={() => tailor('groq')}>Use Groq</button> : null}
-            <button className="btn" onClick={() => tailor('refine')}>Use Flash-Lite</button>
-          </div>
-        </Modal>
-      ) : null}
-      {applyQ ? (
-        <Modal onClose={() => setApplyQ(null)} labelledBy="applyq">
-          <div className="row" style={{ background: '#F2FAF5', borderRadius: 12, padding: 12, flexWrap: 'nowrap' }}><span style={{ width: 36, height: 36, flex: 'none', borderRadius: '50%', background: 'var(--okbg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon n="check" s={18} w={3} c="var(--ok)" /></span><div className="col" style={{ gap: 2, minWidth: 0 }}><b style={{ color: 'var(--ink)', fontSize: 14 }}>PDF downloaded</b><span className="small" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{applyQ}</span></div></div>
-          <h2 id="applyq">Did you apply to this job?</h2>
-          {job.url ? <a href={job.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>Open the posting to apply ↗</a> : null}
-          <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn secondary" onClick={() => setApplyQ(null)}>Not yet, keep it in New</button><button className="btn" onClick={() => { setJobStatus(pid, job, 'applied'); setApplyQ(null); location.hash = '#/jobs?tab=applied'; }}>Yes, mark as applied</button></div>
-        </Modal>
-      ) : null}
+      {modals}
     </div>
+  );
+}
+
+function LimitModal({ p, u, groqOn, onClose, tailor }) {
+  return (
+    <Modal onClose={onClose} labelledBy="lim">
+      <h2 id="lim">{u.tailor >= p.limits.tailorPerDay ? `You've used today's ${p.limits.tailorPerDay} tailorings` : "Gemini's free tailoring limit is used up for today"}</h2>
+      <p className="sub">You can still tailor with a backup model. Results may be a little less polished, so review them closely.</p>
+      <div className="col" style={{ background: 'var(--bg)', borderRadius: 12, padding: 14, fontSize: 14 }}>
+        <div className="between"><span>Gemini Flash (tailoring)</span><b style={{ color: 'var(--err)' }}>Used up · resets in {formatDuration(msUntilQuotaReset())}</b></div>
+        <div className="between"><span>Gemini Flash-Lite</span><b style={{ color: 'var(--ok)' }}>{Math.max(0, p.limits.refinePerDay - u.refine)} left</b></div>
+        <div className="between"><span>Groq</span><b style={{ color: groqOn ? 'var(--ok)' : 'var(--mut)' }}>{groqOn ? 'Available' : 'Not set up'}</b></div>
+      </div>
+      <div className="row" style={{ justifyContent: 'flex-end' }}>
+        <button className="btn secondary" onClick={onClose}>Wait till tomorrow</button>
+        {groqOn ? <button className="btn secondary" onClick={() => tailor('groq')}>Use Groq</button> : null}
+        <button className="btn" onClick={() => tailor('refine')}>Use Flash-Lite</button>
+      </div>
+    </Modal>
+  );
+}
+
+function ApplyModal({ job, name, onClose, onYes }) {
+  return (
+    <Modal onClose={onClose} labelledBy="applyq">
+      <div className="row" style={{ background: '#F2FAF5', borderRadius: 12, padding: 12, flexWrap: 'nowrap' }}><span style={{ width: 36, height: 36, flex: 'none', borderRadius: '50%', background: 'var(--okbg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon n="check" s={18} w={3} c="var(--ok)" /></span><div className="col" style={{ gap: 2, minWidth: 0 }}><b style={{ color: 'var(--ink)', fontSize: 14 }}>PDF saved</b><span className="small" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span></div></div>
+      <h2 id="applyq">Did you apply to this job?</h2>
+      {job.url ? <a href={job.url} target="_blank" rel="noreferrer" style={{ fontWeight: 600 }}>Open the posting to apply ↗</a> : null}
+      <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn secondary" onClick={onClose}>Not yet, keep it in New</button><button className="btn" onClick={onYes}>Yes, mark as applied</button></div>
+    </Modal>
   );
 }
 
@@ -295,11 +384,12 @@ function EditModal({ path, r, onSave, onClose }) {
   );
 }
 
-function ChatPanel({ pid, id, job, v, refineLeft, onClose }) {
+function ChatPanel({ pid, id, job, v, refineLeft, onClose, mobile }) {
   const [msg, setMsg] = useState(''); const [busy, setBusy] = useState(false); const [err, setErr] = useState(null);
   const box = useRef(null);
   const per = useStore((s) => s.profiles[pid].limits.refinePerJob);
   useEffect(() => { box.current?.scrollTo(0, box.current.scrollHeight); }, [v.chat?.length, busy]);
+  useEffect(() => { if (!mobile) return undefined; const f = (e) => { e.preventDefault(); onClose(); }; addEventListener('appback', f); return () => removeEventListener('appback', f); }, [mobile, onClose]);
   const add = (t) => setMsg((m) => (m.trim() ? `${m.trim()}\n${t}` : t));
 
   async function send() {
@@ -331,12 +421,23 @@ function ChatPanel({ pid, id, job, v, refineLeft, onClose }) {
 
   const used = per - refineLeft; const pct = Math.round((refineLeft / per) * 100);
   return (
-    <aside className="chat" aria-label="Refine with chat">
-      <div className="between" style={{ padding: '16px 18px', borderBottom: '1px solid var(--line)', flexWrap: 'nowrap' }}>
+    <aside className={mobile ? 'mchat' : 'chat'} aria-label="Refine with chat">
+      {mobile ? (
+        <>
+          <AppBar onBack={onClose} title="Refine resume" sub={`${job.company} only`}>
+            <div className="col" style={{ alignItems: 'flex-end', gap: 4, paddingRight: 6 }}><span style={{ fontSize: 12, fontWeight: 700, color: refineLeft ? 'var(--ink)' : 'var(--err)' }}>{refineLeft} of {per} left</span><div className="meter"><div style={{ width: `${pct}%`, background: refineLeft ? undefined : 'var(--err)' }} /></div></div>
+          </AppBar>
+          <button onClick={onClose} className="row" style={{ margin: '12px 16px 0', background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', flexWrap: 'nowrap', textAlign: 'left', cursor: 'pointer' }}>
+            <span style={{ width: 32, height: 42, flex: 'none', borderRadius: 4, background: '#fff', border: '1px solid var(--line)', borderTop: '3px solid var(--acc)' }} />
+            <span className="col" style={{ flex: 1, gap: 2 }}><b style={{ fontSize: 13, color: 'var(--ink)' }}>View updated resume</b><span className="small" style={{ fontSize: 12 }}>{(v.changed || []).length} changes so far</span></span>
+            <Icon n="chev" s={18} c="var(--mut)" />
+          </button>
+        </>
+      ) : <div className="between" style={{ padding: '16px 18px', borderBottom: '1px solid var(--line)', flexWrap: 'nowrap' }}>
         <div className="col" style={{ gap: 2 }}><span style={{ ...H, fontSize: 16 }}>Refine this resume</span><span className="small">For {job.company} only</span></div>
         <div className="col" style={{ alignItems: 'flex-end', gap: 6 }}><span style={{ fontSize: 13, fontWeight: 700, color: refineLeft ? 'var(--ink)' : 'var(--err)' }}>{refineLeft} of {per} refinements left</span><div className="meter"><div style={{ width: `${pct}%`, background: refineLeft ? undefined : 'var(--err)' }} /></div></div>
         <button className="iconbtn" aria-label="Close chat" onClick={onClose}><Icon n="x" s={18} /></button>
-      </div>
+      </div>}
       <div className="msgs" ref={box}>
         {!v.chat?.length ? <div className="small" style={{ textAlign: 'center', padding: '24px 8px' }}>Ask for everything you want changed in one message, for example: “1) Shorten the summary 2) Move the Power BI bullet first 3) Use the word stakeholders”.</div> : null}
         {(v.chat || []).map((m, i) => (
@@ -348,7 +449,7 @@ function ChatPanel({ pid, id, job, v, refineLeft, onClose }) {
         {busy ? <div className="bubble ai"><span className="spinner" style={{ width: 18, height: 18, borderWidth: 3, display: 'inline-block', verticalAlign: 'middle' }} /> Updating your resume…</div> : null}
         {!refineLeft ? <div className="row" style={{ background: 'var(--bg)', border: '1px solid var(--line)', borderRadius: 12, padding: '12px 14px', flexWrap: 'nowrap', alignItems: 'flex-start' }}><Icon n="lock" c="var(--mut)" /><span style={{ fontSize: 14 }}><b style={{ color: 'var(--ink)' }}>No refinements left{used >= per ? ' for this job' : ' today'}.</b> You can still click any line in the resume to edit it yourself.</span></div> : null}
       </div>
-      <div className="col" style={{ padding: '12px 14px 16px', borderTop: '1px solid var(--line)', gap: 10 }}>
+      <div className="col" style={{ padding: mobile ? '12px 14px calc(16px + env(safe-area-inset-bottom))' : '12px 14px 16px', borderTop: '1px solid var(--line)', gap: 10 }}>
         {err ? <Banner tone="err">{err}</Banner> : null}
         {refineLeft ? <>
           <div className="row" style={{ background: 'var(--bluebg)', color: 'var(--blue)', borderRadius: 10, padding: '10px 12px', fontSize: 13, lineHeight: 1.45, flexWrap: 'nowrap', alignItems: 'flex-start' }}><Icon n="chat" s={16} /><span><b>Put all your changes in one message.</b> Each send uses 1 of your {refineLeft} refinements left for this job.</span></div>

@@ -51,8 +51,23 @@ export async function scheduleMorningReminder(on = true) {
   });
 }
 
+// Android back button: close an open sheet or the chat first (they listen for 'appback'),
+// then go back a screen, and leave the app from the Jobs screen.
+async function setupBackButton() {
+  const { App } = await import('@capacitor/app');
+  App.addListener('backButton', ({ canGoBack }) => {
+    const ev = new Event('appback', { cancelable: true });
+    if (!window.dispatchEvent(ev)) return;
+    const h = location.hash.replace(/^#/, '').split('?')[0] || '/';
+    if (h === '/jobs' || h === '/') { App.exitApp(); return; }
+    if (canGoBack && history.length > 1) history.back();
+    else location.hash = '#/jobs';
+  });
+}
+
 export async function setupNative() {
   if (!isNative) return;
   document.documentElement.classList.add('native');
+  try { await setupBackButton(); } catch { /* optional */ }
   try { await scheduleMorningReminder(true); } catch { /* notifications are optional */ }
 }
