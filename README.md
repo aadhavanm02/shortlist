@@ -22,6 +22,16 @@ npx wrangler secret put GEMINI_KEY       # replace a key (also GROQ_KEY, RAPIDAP
 
 Both people share these keys, so free limits are shared too. The default daily limits in Settings are split between you.
 
+## Android app
+
+Download **[Shortlist.apk](https://github.com/aadhavanm02/shortlist/releases/download/android-latest/Shortlist.apk)** on the phone, open it, and allow installing from that source when Android asks. Every push to `main` builds a new APK at the same link (`.github/workflows/android.yml`).
+
+- The app is the same web app wrapped with Capacitor (`android/`, `capacitor.config.json`).
+- PDFs save to Documents/Shortlist and open the share sheet (Files, Drive, WhatsApp, Gmail).
+- A reminder notification arrives at 7 AM each day.
+- Updates install over the old app only when every APK is signed with the same key, stored as the repo secrets `ANDROID_KEYSTORE_B64`, `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`. Without them each build uses a temporary key, so you would have to uninstall first, which clears the app's saved data.
+- Icons and splash come from `assets/` (`npx @capacitor/assets generate --android`).
+
 ## Daily use
 
 - Jobs are fetched the first time you open the app each day. **Refresh** fetches again (uses job search quota).

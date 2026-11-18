@@ -1,0 +1,70 @@
+name: Build Android APK
+on:
+  push:
+    branches: [main]
+    paths: ['src/**', 'public/**', 'android/**', 'index.html', 'package*.json', 'capacitor.config.json', 'vite.config.js', '.github/workflows/android.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: android
+  cancel-in-progress: true
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+
+      # Use the permanent signing key when it is set up as repo secrets
+      - name: Restore signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.p12"
+            echo "ANDROID_KEYSTORE_FILE=$RUNNER_TEMP/release.p12" >> "$GITHUB_ENV"
+          else
+            echo "::warning::No signing key secret. The APK uses a temporary key, so it cannot update an earlier install."
+          fi
+
+      - name: Build release APK
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/Shortlist.apk"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Shortlist-apk
+          path: ${{ runner.temp }}/Shortlist.apk
+
+      # Stable download link: /releases/download/android-latest/Shortlist.apk
+      - name: Publish to the android-latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="Build 1.0.${{ github.run_number }} from ${GITHUB_SHA::7}. Install on Android: open this file on the phone and allow installing from this source."
+          if gh release view android-latest >/dev/null 2>&1; then
+            gh release edit android-latest --notes "$NOTES" --title "Shortlist for Android"
+          else
+            gh release create android-latest --title "Shortlist for Android" --notes "$NOTES" --latest
+          fi
+          gh release upload android-latest "$RUNNER_TEMP/Shortlist.apk" --clobber
