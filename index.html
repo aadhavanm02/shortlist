@@ -7,7 +7,9 @@
       // The Android app and old app links (…/shortlist/#/jobs) go straight to the web app
       (function () {
         var native = !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : true)) || (location.protocol === 'https:' && location.hostname === 'localhost');
-        if (native || location.hash.indexOf('#/') === 0) location.replace('app/' + location.hash);
+        // In the app, name the file: its local server answers unknown folders with this page again
+        if (native) location.replace('/app/index.html' + location.hash);
+        else if (location.hash.indexOf('#/') === 0) location.replace('app/' + location.hash);
       })();
     </script>
     <meta name="theme-color" content="#FAF8F6" />
