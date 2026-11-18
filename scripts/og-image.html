@@ -1,0 +1,65 @@
+<!doctype html>
+<!-- Source for public/og.png (link preview image). Regenerate with: npm run og -->
+<html><head><meta charset="utf-8">
+<style>
+@font-face { font-family: Manrope; font-weight: 800; src: url(../node_modules/@fontsource/manrope/files/manrope-latin-800-normal.woff2); }
+@font-face { font-family: Manrope; font-weight: 700; src: url(../node_modules/@fontsource/manrope/files/manrope-latin-700-normal.woff2); }
+@font-face { font-family: Inter; font-weight: 400; src: url(../node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2); }
+@font-face { font-family: Inter; font-weight: 500; src: url(../node_modules/@fontsource/inter/files/inter-latin-500-normal.woff2); }
+@font-face { font-family: Inter; font-weight: 600; src: url(../node_modules/@fontsource/inter/files/inter-latin-600-normal.woff2); }
+@font-face { font-family: Inter; font-weight: 700; src: url(../node_modules/@fontsource/inter/files/inter-latin-700-normal.woff2); }
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 1200px; height: 630px; overflow: hidden; }
+body { background: #FAF8F6; font-family: Inter, sans-serif; color: #3B3941; position: relative; }
+.bar { position: absolute; inset: 0 0 auto 0; height: 12px; background: linear-gradient(90deg,#F06434 0%,#F5A27F 60%,#F9C9B4 100%); }
+.left { position: absolute; left: 72px; top: 78px; width: 620px; }
+.logo { display: flex; align-items: center; gap: 14px; }
+.mark { width: 52px; height: 52px; border-radius: 14px; background: #F06434; display: flex; align-items: center; justify-content: center; }
+.logo b { font: 800 34px Manrope; color: #1C1A22; letter-spacing: -0.5px; }
+h1 { margin-top: 60px; font: 800 54px/1.1 Manrope; color: #1C1A22; letter-spacing: -1.5px; }
+h1 em { font-style: normal; color: #F06434; }
+.sub { margin-top: 26px; width: 560px; font-size: 22px; line-height: 1.5; color: #6A6670; }
+.pills { position: absolute; left: 72px; bottom: 60px; display: flex; gap: 10px; }
+.pill { font: 600 17px Inter; color: #B8461C; background: #FEF0EA; border-radius: 999px; padding: 10px 18px; }
+
+.right { position: absolute; right: 64px; top: 92px; width: 440px; height: 470px; }
+.card { position: absolute; background: #fff; border: 1px solid #ECE7E4; border-radius: 18px; box-shadow: 0 18px 40px rgba(28,26,34,.08); }
+.job { left: 0; right: 0; padding: 20px 22px; display: flex; gap: 16px; align-items: center; }
+.job .co { width: 46px; height: 46px; border-radius: 12px; flex: none; display: flex; align-items: center; justify-content: center; font: 800 20px Manrope; }
+.job .t { font: 700 19px Manrope; color: #1C1A22; }
+.job .m { font-size: 15px; color: #6A6670; margin-top: 4px; }
+.score { margin-left: auto; font: 800 17px Manrope; color: #17633E; background: #E6F4EC; border-radius: 10px; padding: 8px 11px; }
+.j1 { top: 0; } .j2 { top: 104px; } .j3 { top: 208px; opacity: .55; }
+.resume { left: 70px; right: -10px; top: 296px; padding: 20px 22px; }
+.resume .lbl { font: 700 13px Inter; letter-spacing: .6px; text-transform: uppercase; color: #6A6670; }
+.resume .row { margin-top: 12px; display: flex; gap: 10px; align-items: flex-start; font-size: 15.5px; line-height: 1.45; }
+.ok { width: 22px; height: 22px; border-radius: 50%; background: #F06434; flex: none; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+.resume b { color: #1C1A22; }
+.btns { margin-top: 14px; display: flex; gap: 8px; }
+.btn { font: 600 14px Inter; border-radius: 10px; padding: 8px 14px; }
+.b1 { background: #1C1A22; color: #fff; } .b2 { background: #F3EFEC; color: #3B3941; }
+</style></head>
+<body>
+<div class="bar"></div>
+
+<div class="left">
+  <div class="logo">
+    <span class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+    <b>Shortlist</b>
+  </div>
+  <h1>Today's best jobs, with a<br>resume <em>tailored</em> to<br>each one.</h1>
+  <p class="sub">Up to 20 fresh matches a day. AI tailors your resume to the job, you download a one-page PDF.</p>
+</div>
+<div class="pills"><span class="pill">Daily matches</span><span class="pill">AI tailoring</span><span class="pill">One-page PDF</span></div>
+
+<div class="right">
+  <div class="card job j1"><span class="co" style="background:#EEF1FB;color:#2F3F85">F</span><div><div class="t">Senior Product Designer</div><div class="m">Bangalore · Hybrid · 2h ago</div></div><span class="score">94</span></div>
+  <div class="card job j2"><span class="co" style="background:#FEF0EA;color:#B8461C">Z</span><div><div class="t">Business Analyst</div><div class="m">Chennai · Office · 5h ago</div></div><span class="score">89</span></div>
+  <div class="card job j3"><span class="co" style="background:#E6F4EC;color:#17633E">R</span><div><div class="t">UX Designer</div><div class="m">Hyderabad · Hybrid · 1d ago</div></div><span class="score">86</span></div>
+  <div class="card resume">
+    <div class="lbl">Suggestion</div>
+    <div class="row"><span class="ok"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span><span>Redesigned checkout, lifting <b>conversion by 18%</b> across web and app</span></div>
+    <div class="btns"><span class="btn b1">Accept</span><span class="btn b2">Reject</span></div>
+  </div>
+</div>
+</body></html>
