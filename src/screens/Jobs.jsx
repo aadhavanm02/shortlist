@@ -1,9 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useStore } from '../lib/store.js';
+import { useStore, setActive, usageOf } from '../lib/store.js';
 import { fetchFeed, setJobStatus, pruneSkipped } from '../lib/jobs.js';
-import { TopBar, Icon, Banner, Empty, Score, Skeleton, Toggle, useToast } from '../components/ui.jsx';
+import { TopBar, Icon, Banner, Empty, Score, Skeleton, Toggle, useToast, useMobile, Avatar, Modal } from '../components/ui.jsx';
 
-function JobCard({ j, extra, dim }) {
+function JobCard({ j, extra, dim, mobile }) {
+  if (mobile) return (
+    <a className={`job ${dim ? 'dim' : ''}`} href={`#/job/${j.id}`}>
+      <div className="col" style={{ flex: 1, minWidth: 0, gap: 5 }}>
+        <div className="row" style={{ gap: 8 }}><span className="t">{j.title}</span>{j.dream ? <span className="chip blue">Dream company</span> : null}</div>
+        <span style={{ fontSize: 14 }}>{j.company} · {j.location} · {j.mode}</span>
+        <div className="meta"><span style={{ fontWeight: 600, color: 'var(--ink)' }}>{j.salary}</span>{j.expText ? <span>{j.expText}</span> : null}{j.ago ? <span>{j.ago}</span> : null}</div>
+        {extra}
+      </div>
+      <Score n={j.score} />
+    </a>
+  );
   return (
     <a className={`job ${dim ? 'dim' : ''}`} href={`#/job/${j.id}`}>
       <div className="logo-sq">{(j.company || '?')[0]}</div>
@@ -27,6 +38,7 @@ export default function Jobs({ pid, route, tab }) {
   const [flt, setFlt] = useState({ office: true, hybrid: true, remote: true, salaryOnly: false, days: 3, src: '' });
   const [showClose, setShowClose] = useState(false);
   const [toast, showToast] = useToast();
+  const mobile = useMobile();
 
   const load = async (force) => {
     setState({ loading: true, error: null, kind: null });
@@ -62,25 +74,14 @@ export default function Jobs({ pid, route, tab }) {
 
   const tabLink = (id, label, n) => <a className={`tab ${tab === id ? 'on' : ''}`} role="tab" aria-selected={tab === id} href={`#/jobs?tab=${id}`} style={{ textDecoration: 'none' }}>{label} · {n}</a>;
 
-  return (
-    <div className="app">
-      <TopBar pid={pid} route={route} />
-      <main className="main">
-        <div className="between" style={{ alignItems: 'flex-end' }}>
-          <div className="col" style={{ gap: 6 }}><h1 className="title">Today's jobs</h1><p className="sub">{sub}</p></div>
-          <div className="row">
-            <button className="btn secondary sm" onClick={() => load(true)} disabled={state.loading} title="Uses your job search quota"><Icon n="refresh" s={16} />Refresh</button>
-            <a className="btn secondary sm" href="#/setup"><Icon n="sliders" s={16} />Preferences</a>
-          </div>
-        </div>
-        <div className="tabs" role="tablist">{tabLink('new', 'New', newList.length)}{tabLink('applied', 'Applied', applied.length)}{tabLink('skipped', 'Skipped', skipped.length)}</div>
-
-        {state.loading ? <><div className="progress" role="progressbar" aria-label="Loading jobs"><div style={{ width: '60%' }} /></div>{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} />)}</> : (
+  const body = (
+        state.loading ? <><div className="progress" role="progressbar" aria-label="Loading jobs"><div style={{ width: '60%' }} /></div>{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} />)}</> : (
           <>
             {state.error && state.kind === 'nokey' ? <Banner tone="info" icon="info">{state.error}</Banner> : null}
             {state.error && state.kind !== 'nokey' ? <Banner icon={state.kind === 'offline' ? 'wifi' : 'alert'} action={<button className="btn secondary sm" onClick={() => load(true)}>Retry</button>}>{state.kind === 'offline' ? "You're offline. " : "Couldn't get today's jobs. "}{feed ? 'Showing the last list we saved. ' : ''}{state.kind === 'offline' ? 'Tailoring needs internet.' : state.error}</Banner> : null}
             {feed?.notes?.length && !state.error ? <Banner tone="info" icon="info">Some sources had problems: {feed.notes.join(' · ')}. Showing what we found.</Banner> : null}
 
+            {mobile ? null : <>
             <div className="row" style={{ flexWrap: 'wrap' }}>
               <div className="search"><Icon n="search" s={18} c="var(--mut)" /><input aria-label="Search jobs" placeholder="Search title, company or skill" value={q} onChange={(e) => setQ(e.target.value)} />{q ? <button className="iconbtn" aria-label="Clear search" onClick={() => setQ('')}><Icon n="x" s={18} /></button> : null}</div>
               {tab === 'new' ? <>
@@ -98,10 +99,11 @@ export default function Jobs({ pid, route, tab }) {
               </div>
             ) : null}
 
+            </>}
             {filtered.map((j) => (
               <div key={j.id} style={{ position: 'relative' }}>
-                <JobCard j={j} extra={tab === 'applied' ? <span className="small" style={{ color: 'var(--ok)', fontWeight: 600 }}>Applied {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}{p.versions[j.id] ? ' · resume saved' : ''}</span> : tab === 'skipped' ? <span className="small">Skipped {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · disappears after 7 days</span> : null} />
-                {tab === 'new' ? <button className="iconbtn" style={{ position: 'absolute', right: 8, bottom: 8 }} aria-label={`Skip ${j.title} at ${j.company}`} title="Skip" onClick={() => skip(j)}><Icon n="x" s={18} /></button> : null}
+                <JobCard j={j} mobile={mobile} extra={tab === 'applied' ? <span className="small" style={{ color: 'var(--ok)', fontWeight: 600 }}>Applied {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}{p.versions[j.id] ? ' · resume saved' : ''}</span> : tab === 'skipped' ? <span className="small">Skipped {new Date(j.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} · disappears after 7 days</span> : null} />
+                {tab === 'new' && !mobile ? <button className="iconbtn" style={{ position: 'absolute', right: 8, bottom: 8 }} aria-label={`Skip ${j.title} at ${j.company}`} title="Skip" onClick={() => skip(j)}><Icon n="x" s={18} /></button> : null}
                 {tab === 'skipped' ? <button className="btn secondary sm" style={{ position: 'absolute', right: 12, bottom: 12 }} onClick={() => setJobStatus(pid, j, null)}><Icon n="undo" s={16} />Restore</button> : null}
               </div>
             ))}
@@ -118,11 +120,67 @@ export default function Jobs({ pid, route, tab }) {
             {tab === 'new' && closeList.length && !q ? (
               showClose ? <>
                 <span className="label" style={{ marginTop: 8 }}>Close matches · each misses one filter</span>
-                {closeList.map((j) => <JobCard key={j.id} j={j} dim extra={<span className="small">Misses: {j.misses[0]}</span>} />)}
+                {closeList.map((j) => <JobCard key={j.id} j={j} mobile={mobile} dim extra={<span className="small">Misses: {j.misses[0]}</span>} />)}
               </> : <button className="btn secondary" style={{ alignSelf: 'flex-start', borderStyle: 'dashed' }} onClick={() => setShowClose(true)}>Show {closeList.length} close matches (just miss one filter)</button>
             ) : null}
           </>
-        )}
+        )
+  );
+
+  const u = usageOf(p); const left = Math.max(0, p.limits.tailorPerDay - u.tailor);
+  const resetFlt = () => setFlt({ office: true, hybrid: true, remote: true, salaryOnly: false, days: 3, src: '' });
+  const filterFields = (
+    <>
+      <div className="col"><span className="label">Work type</span><div className="row">{['office', 'hybrid', 'remote'].map((m) => <Toggle key={m} on={flt[m]} onClick={() => setFlt({ ...flt, [m]: !flt[m] })}>{m[0].toUpperCase() + m.slice(1)}</Toggle>)}</div></div>
+      <div className="col"><span className="label">Salary</span><div className="row"><Toggle on={!flt.salaryOnly} onClick={() => setFlt({ ...flt, salaryOnly: false })}>Any</Toggle><Toggle on={flt.salaryOnly} onClick={() => setFlt({ ...flt, salaryOnly: true })}>Shows salary only</Toggle></div></div>
+      <div className="col"><span className="label">Posted</span><div className="row">{[[1, 'Today'], [3, 'Last 3 days']].map(([d, l]) => <Toggle key={d} on={flt.days === d} onClick={() => setFlt({ ...flt, days: d })}>{l}</Toggle>)}</div></div>
+    </>
+  );
+
+  if (mobile) return (
+    <div className="app">
+      <header className="mhead">
+        <div className="between" style={{ flexWrap: 'nowrap', alignItems: 'center' }}>
+          <div className="col" style={{ gap: 2, minWidth: 0 }}><h1>Today's jobs</h1><span className="small">{sub}</span></div>
+          <div className="row" style={{ flexWrap: 'nowrap', gap: 4 }}>
+            <button className="iconbtn" aria-label="Refresh jobs" onClick={() => load(true)} disabled={state.loading}><Icon n="refresh" /></button>
+            <button className="avatar-btn" aria-label="Switch profile" onClick={() => { setActive(null); location.hash = '#/'; }}><Avatar id={pid} s={40} /></button>
+          </div>
+        </div>
+        <div className="search" style={{ flex: 'none' }}><Icon n="search" s={18} c="var(--mut)" /><input aria-label="Search jobs" placeholder="Search title, company or skill" value={q} onChange={(e) => setQ(e.target.value)} />{q ? <button className="iconbtn" style={{ width: 36, height: 36 }} aria-label="Clear search" onClick={() => setQ('')}><Icon n="x" s={18} /></button> : null}{tab === 'new' ? <button className="iconbtn" style={{ width: 36, height: 36 }} aria-label="Filter and sort" onClick={() => setShowFilters(true)}><Icon n="sliders" s={18} /></button> : null}</div>
+        <div className="tabs" role="tablist">{tabLink('new', 'New', newList.length)}{tabLink('applied', 'Applied', applied.length)}{tabLink('skipped', 'Skipped', skipped.length)}</div>
+      </header>
+      <main className="main" style={{ padding: '14px 16px 24px', gap: 10 }}>
+        <div className="between" style={{ flexWrap: 'nowrap' }}><span className="row" style={{ gap: 8, fontSize: 12, fontWeight: 600, color: 'var(--txt)', flexWrap: 'nowrap' }}><span className={`dot ${left === 0 ? 'out' : left <= 3 ? 'low' : ''}`} />Tailorings left today: {left} of {p.limits.tailorPerDay}</span><a href="#/setup" style={{ fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>Preferences</a></div>
+        {body}
+      </main>
+      {showFilters ? (
+        <Modal onClose={() => setShowFilters(false)} labelledBy="fs">
+          <div className="between"><h2 id="fs" style={{ fontSize: 20 }}>Filter and sort</h2><button className="iconbtn" aria-label="Close" onClick={() => setShowFilters(false)}><Icon n="x" /></button></div>
+          <div className="col"><span className="label">Sort by</span><div className="row">{[['match', 'Best match'], ['new', 'Newest'], ['salary', 'Highest salary']].map(([k, l]) => <Toggle key={k} on={sort === k} onClick={() => setSort(k)}>{l}</Toggle>)}</div></div>
+          {filterFields}
+          <div className="between" style={{ borderTop: '1px solid var(--line)', paddingTop: 14, flexWrap: 'nowrap' }}><button className="btn ghost sm" onClick={resetFlt}>Reset</button><button className="btn" style={{ flex: 1 }} onClick={() => setShowFilters(false)}>Show {filtered.length} jobs</button></div>
+        </Modal>
+      ) : null}
+      <TopBar pid={pid} route={route} />
+      {toast}
+    </div>
+  );
+
+  return (
+    <div className="app">
+      <TopBar pid={pid} route={route} />
+      <main className="main">
+        <div className="between" style={{ alignItems: 'flex-end' }}>
+          <div className="col" style={{ gap: 6 }}><h1 className="title">Today's jobs</h1><p className="sub">{sub}</p></div>
+          <div className="row">
+            <button className="btn secondary sm" onClick={() => load(true)} disabled={state.loading} title="Uses your job search quota"><Icon n="refresh" s={16} />Refresh</button>
+            <a className="btn secondary sm" href="#/setup"><Icon n="sliders" s={16} />Preferences</a>
+          </div>
+        </div>
+        <div className="tabs" role="tablist">{tabLink('new', 'New', newList.length)}{tabLink('applied', 'Applied', applied.length)}{tabLink('skipped', 'Skipped', skipped.length)}</div>
+
+        {body}
       </main>
       {toast}
     </div>

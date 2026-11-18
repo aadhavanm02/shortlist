@@ -175,3 +175,50 @@ input::placeholder, textarea::placeholder { color: #8A8590; }
 .paper .hl { background: #DDF2E5; border-radius: 3px; }
 .pagebreak { position: absolute; left: 0; right: 0; border-top: 2px dashed var(--errb); }
 .pagebreak span { position: absolute; right: 8px; top: 4px; font-size: 12px; font-weight: 700; color: var(--err); background: #fff; padding: 0 4px; }
+
+/* ===== Android layout (native app and phone widths) ===== */
+html.native, html.native body { -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+html.native .appbar, html.native .bnav, html.native .mhead, html.native .btn, html.native .tab, html.native .seg { -webkit-user-select: none; user-select: none; }
+.appbar { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 6px; padding: 10px 12px; min-height: 64px; background: #fff; border-bottom: 1px solid var(--line); }
+.appbar-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.appbar-t .t { font-family: var(--h); font-weight: 800; font-size: 16px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.appbar-t .s { font-size: 12px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+a.iconbtn { text-decoration: none; }
+.bnav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: #fff; border-top: 1px solid var(--line); padding: 6px 0 calc(10px + env(safe-area-inset-bottom)); }
+.bnav-i { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 4px; text-decoration: none; font-size: 12px; font-weight: 600; color: var(--mut); }
+.bnav-i:hover { color: var(--ink); }
+.bnav-ic { width: 56px; height: 30px; border-radius: 999px; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.bnav-i.on { color: var(--ink); font-weight: 700; }
+.bnav-i.on .bnav-ic { background: var(--tint); color: var(--acct); }
+.app:has(.bnav) { padding-bottom: calc(72px + env(safe-area-inset-bottom)); }
+
+/* Jobs header (large title, avatar, search, tabs) */
+.mhead { position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid var(--line); padding: 16px 20px 0; display: flex; flex-direction: column; gap: 12px; }
+.mhead .tabs { border-bottom: 0; margin: 0 -2px; }
+.mhead h1 { font-size: 22px; }
+.avatar-btn { border: 0; background: transparent; padding: 0; border-radius: 50%; cursor: pointer; flex: none; }
+
+/* segmented control (Job | Resume) */
+.seg { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: #F3F1EF; border-radius: 10px; padding: 4px; }
+.seg button { height: 38px; border: 0; border-radius: 8px; background: transparent; font-size: 14px; font-weight: 600; color: var(--mut); cursor: pointer; }
+.seg button.on { background: #fff; color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgba(28,26,34,.1); }
+
+/* sticky bottom action bar */
+.actionbar { position: sticky; bottom: 0; z-index: 15; background: #fff; border-top: 1px solid var(--line); padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; }
+
+/* full-screen chat */
+.mchat { position: fixed; inset: 0; z-index: 45; background: #fff; display: flex; flex-direction: column; }
+.mchat .msgs { flex: 1; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+
+@media (max-width: 760px) {
+  .main { padding-top: 18px; padding-bottom: 28px; gap: 14px; }
+  .job { border-radius: 14px; }
+  .job .t { font-size: 16px; }
+  .score.big-m { font-size: 13px; padding: 3px 10px; }
+  .fab { right: 16px; bottom: calc(20px + env(safe-area-inset-bottom)); }
+  .app:has(.bnav) .fab, .app:has(.bnav) .toast { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  .toast { width: calc(100% - 32px); justify-content: space-between; }
+  .empty { padding: 36px 20px; }
+  .card { padding: 18px; border-radius: 14px; }
+  .modal { padding-bottom: calc(22px + env(safe-area-inset-bottom)); }
+}

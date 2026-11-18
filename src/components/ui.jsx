@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useStore, usageOf, setActive } from '../lib/store.js';
+import { isNative } from '../lib/native.js';
 
 const P = {
   back: <path d="M15 6l-6 6 6 6" />, search: <><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></>,
@@ -14,7 +15,40 @@ const P = {
   ext: <path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />, pencil: <><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M14 6l4 4" /></>,
   undo: <><path d="M9 14L4 9l5-5" /><path d="M4 9h11a5 5 0 0 1 0 10h-3" /></>, upload: <path d="M12 16V5M7 10l5-5 5 5M5 19h14" />,
   refresh: <><path d="M20 11a8 8 0 1 0-2.3 5.7" /><path d="M20 4v7h-7" /></>,
+  briefcase: <><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>,
+  file: <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /></>,
+  gear: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></>,
 };
+
+// Android layout: the native app, or any phone-width screen
+const mq = typeof window !== 'undefined' ? window.matchMedia('(max-width: 760px)') : null;
+export function useMobile() {
+  const [m, setM] = useState(isNative || !!mq?.matches);
+  useEffect(() => { if (isNative || !mq) return undefined; const f = () => setM(mq.matches); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f); }, []);
+  return m;
+}
+
+// Android top app bar: back arrow, title + subtitle, trailing actions
+export function AppBar({ back, onBack, title, sub, children }) {
+  return (
+    <header className="appbar">
+      {back || onBack ? (onBack
+        ? <button className="iconbtn" aria-label="Back" onClick={onBack}><Icon n="back" s={22} /></button>
+        : <a className="iconbtn" aria-label="Back" href={back}><Icon n="back" s={22} /></a>) : null}
+      <div className="appbar-t"><span className="t">{title}</span>{sub ? <span className="s">{sub}</span> : null}</div>
+      {children}
+    </header>
+  );
+}
+
+// Android bottom navigation for the three top-level screens
+export function BottomNav({ route }) {
+  const item = (href, r, icon, label) => {
+    const on = route.startsWith(r);
+    return <a href={href} className={`bnav-i ${on ? 'on' : ''}`} aria-current={on ? 'page' : undefined}><span className="bnav-ic"><Icon n={icon} s={22} /></span>{label}</a>;
+  };
+  return <nav className="bnav" aria-label="Main">{item('#/jobs', '/jobs', 'briefcase', 'Jobs')}{item('#/resumes', '/resumes', 'file', 'Resumes')}{item('#/settings', '/settings', 'gear', 'Settings')}</nav>;
+}
 export function Icon({ n, s = 20, w = 2, c = 'currentColor' }) {
   return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth={w} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{P[n]}</svg>;
 }
@@ -34,8 +68,10 @@ export function Quota({ pid }) {
   return <span className="quota" title="AI tailorings left today"><span className={`dot ${left === 0 ? 'out' : left <= 3 ? 'low' : ''}`} />Tailorings left today: {left} of {p.limits.tailorPerDay}</span>;
 }
 
-export function TopBar({ pid, route, back }) {
+export function TopBar({ pid, route, back, title, sub }) {
   const p = useStore((s) => s.profiles[pid]);
+  const mobile = useMobile();
+  if (mobile) return back ? <AppBar back={back.href} title={title || back.label} sub={sub} /> : <BottomNav route={route} />;
   const on = (r) => (route.startsWith(r) ? 'navlink on' : 'navlink');
   return (
     <header className="topbar">
