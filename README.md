@@ -24,7 +24,7 @@ Both people share these keys, so free limits are shared too. The default daily l
 
 ## Android app
 
-Download **[Shortlist.apk](https://github.com/aadhavanm02/shortlist/releases/download/android-latest/Shortlist.apk)** on the phone, open it, and allow installing from that source when Android asks. Every push to `main` builds a new APK at the same link (`.github/workflows/android.yml`).
+Open **[aadhavanm02.github.io/shortlist/android.html](https://aadhavanm02.github.io/shortlist/android.html)** on the phone, download the newest `Shortlist-1.0.N.apk`, open it, and allow installing from that source when Android asks. Every push to `main` builds a new versioned APK, and that page always links the newest one (`.github/workflows/android.yml`).
 
 - The app is the same web app wrapped with Capacitor (`android/`, `capacitor.config.json`).
 - PDFs save to Documents/Shortlist and open the share sheet (Files, Drive, WhatsApp, Gmail).

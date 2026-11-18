@@ -49,14 +49,14 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
-          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/Shortlist.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/Shortlist-1.0.${{ github.run_number }}.apk"
 
       - uses: actions/upload-artifact@v5
         with:
           name: Shortlist-apk
-          path: ${{ runner.temp }}/Shortlist.apk
+          path: ${{ runner.temp }}/Shortlist-1.0.${{ github.run_number }}.apk
 
-      # Stable download link: /releases/download/android-latest/Shortlist.apk
+      # Download page: https://aadhavanm02.github.io/shortlist/android.html (always links the newest file)
       - name: Publish to the android-latest release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,4 +67,7 @@ jobs:
           else
             gh release create android-latest --title "Shortlist for Android" --notes "$NOTES" --latest
           fi
-          gh release upload android-latest "$RUNNER_TEMP/Shortlist.apk" --clobber
+          F="Shortlist-1.0.${{ github.run_number }}.apk"
+          gh release upload android-latest "$RUNNER_TEMP/$F" --clobber
+          # keep only the newest APK so the download page and release stay clear
+          gh release view android-latest --json assets --jq '.assets[].name' | grep -v "^$F$" | while read -r old; do gh release delete-asset android-latest "$old" -y; done
