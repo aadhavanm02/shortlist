@@ -77,7 +77,7 @@ export default function Jobs({ pid, route, tab }) {
 
         {state.loading ? <><div className="progress" role="progressbar" aria-label="Loading jobs"><div style={{ width: '60%' }} /></div>{[0, 1, 2, 3, 4].map((i) => <Skeleton key={i} />)}</> : (
           <>
-            {state.error && state.kind === 'nokey' ? <Banner tone="info" icon="info" action={<a className="btn sm" href="#/settings">Add a key</a>}>{state.error}</Banner> : null}
+            {state.error && state.kind === 'nokey' ? <Banner tone="info" icon="info">{state.error}</Banner> : null}
             {state.error && state.kind !== 'nokey' ? <Banner icon={state.kind === 'offline' ? 'wifi' : 'alert'} action={<button className="btn secondary sm" onClick={() => load(true)}>Retry</button>}>{state.kind === 'offline' ? "You're offline. " : "Couldn't get today's jobs. "}{feed ? 'Showing the last list we saved. ' : ''}{state.kind === 'offline' ? 'Tailoring needs internet.' : state.error}</Banner> : null}
             {feed?.notes?.length && !state.error ? <Banner tone="info" icon="info">Some sources had problems: {feed.notes.join(' · ')}. Showing what we found.</Banner> : null}
 

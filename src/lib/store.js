@@ -9,14 +9,13 @@ export const DEFAULT_PREFS = {
   expHave: '', expMin: '', expMax: '', salMin: '', salMax: '', includeNoSalary: true,
   notice: '', companies: [],
 };
-export const DEFAULT_LIMITS = { jobsPerDay: 20, tailorPerDay: 20, refinePerDay: 400, refinePerJob: 20 };
+export const DEFAULT_LIMITS = { jobsPerDay: 20, tailorPerDay: 10, refinePerDay: 200, refinePerJob: 20 };
 export const DEFAULT_MODELS = { tailor: 'gemini-flash-latest', refine: 'gemini-flash-lite-latest', groq: 'openai/gpt-oss-120b' };
 
 function blankProfile(id, name, role) {
   return {
     id, name, role, setup: false,
     prefs: structuredClone(DEFAULT_PREFS),
-    keys: { gemini: '', groq: '', rapidapi: '', adzunaId: '', adzunaKey: '' },
     models: { ...DEFAULT_MODELS }, limits: { ...DEFAULT_LIMITS },
     resume: null, resumeFile: '', resumeUpdated: null,
     feed: null,          // { date, fetchedAt, list: [], close: [], notes: [] }

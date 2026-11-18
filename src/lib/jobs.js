@@ -1,6 +1,7 @@
-// Job sources: JSearch (Google for Jobs via RapidAPI) and Adzuna. Both called from the browser
-// with the person's own free keys. Fetched once a day on first open; refresh is manual.
+// Job sources: JSearch (Google for Jobs via RapidAPI) and Adzuna, called through the Shortlist
+// Worker, which holds the keys. Fetched once a day on first open; refresh is manual.
 import { getState, updateProfile, today } from './store.js';
+import { API, getStatus } from './api.js';
 import { resumeText, keywords, skillPhrases } from './resume.js';
 
 const INR_YEAR = (n) => Math.round((n / 100000) * 10) / 10; // rupees -> lakhs
@@ -36,10 +37,10 @@ function salaryText(min, max) {
   return `₹${min || max} LPA`;
 }
 
-async function jsearch(key, query, signal) {
-  const url = `https://jsearch.p.rapidapi.com/search-v2?query=${encodeURIComponent(query)}&page=1&num_pages=1&country=in&date_posted=3days`;
+async function jsearch(query, signal) {
+  const url = `${API}/jsearch?query=${encodeURIComponent(query)}&page=1&num_pages=1&country=in&date_posted=3days`;
   let res;
-  try { res = await fetch(url, { signal, headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'jsearch.p.rapidapi.com' } }); }
+  try { res = await fetch(url, { signal }); }
   catch (e) { if (e.name === 'AbortError') throw e; throw new Error('Could not reach JSearch'); }
   if (res.status === 429) throw new Error('JSearch monthly limit reached');
   if (res.status === 401 || res.status === 403) throw new Error('JSearch key was rejected');
@@ -65,15 +66,14 @@ async function jsearch(key, query, signal) {
   });
 }
 
-async function adzuna(id, key, what, where, signal) {
-  const params = new URLSearchParams({ app_id: id, app_key: key, results_per_page: '20', what_phrase: what, max_days_old: '3', 'content-type': 'application/json' });
+async function adzuna(what, where, signal) {
+  const params = new URLSearchParams({ results_per_page: '20', what_phrase: what, max_days_old: '3', 'content-type': 'application/json' });
   if (where) params.set('where', where);
   let res;
-  try { res = await fetch(`https://api.adzuna.com/v1/api/jobs/in/search/1?${params}`, { signal }); }
+  try { res = await fetch(`${API}/adzuna?${params}`, { signal }); }
   catch (e) {
     if (e.name === 'AbortError') throw e;
-    // Adzuna does not allow calls from browsers on some setups (CORS)
-    throw new Error('Adzuna blocked the request from the browser. JSearch still works');
+    throw new Error('Could not reach Adzuna');
   }
   if (res.status === 401 || res.status === 403) throw new Error('Adzuna keys were rejected');
   if (res.status === 429) throw new Error('Adzuna daily limit reached');
@@ -136,10 +136,12 @@ function passes(job, prefs) {
 export async function fetchFeed(profileId, { force = false } = {}) {
   const p = getState().profiles[profileId];
   if (!force && p.feed?.date === today()) return p.feed;
-  const prefs = p.prefs; const k = p.keys;
-  const hasJ = !!k.rapidapi; const hasA = !!(k.adzunaId && k.adzunaKey);
-  if (!hasJ && !hasA) throw Object.assign(new Error('Add a free JSearch or Adzuna key in Settings to get daily jobs.'), { kind: 'nokey' });
+  const prefs = p.prefs;
   if (!navigator.onLine) throw Object.assign(new Error('You are offline.'), { kind: 'offline' });
+  let st;
+  try { st = await getStatus(); } catch { throw Object.assign(new Error('Could not reach the Shortlist server. Try again in a minute.'), { kind: 'source' }); }
+  const hasJ = !!st.jsearch; const hasA = !!st.adzuna;
+  if (!hasJ && !hasA) throw Object.assign(new Error('Job search is not set up on the server yet.'), { kind: 'nokey' });
 
   const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 45000);
   const notes = []; const raw = [];
@@ -150,12 +152,12 @@ export async function fetchFeed(profileId, { force = false } = {}) {
     // one query per city keeps JSearch under its small monthly free quota
     const q = titles.slice(0, 4).map((t) => `"${t}"`).join(' OR ');
     const places = cities.length ? cities : ['India'];
-    places.forEach((c) => tasks.push(jsearch(k.rapidapi, `${q} in ${c}, India`, ctrl.signal).catch((e) => { notes.push(e.message); return []; })));
-    if (prefs.work.remote) tasks.push(jsearch(k.rapidapi, `${q} remote India`, ctrl.signal).catch((e) => { notes.push(e.message); return []; }));
+    places.forEach((c) => tasks.push(jsearch(`${q} in ${c}, India`, ctrl.signal).catch((e) => { notes.push(e.message); return []; })));
+    if (prefs.work.remote) tasks.push(jsearch(`${q} remote India`, ctrl.signal).catch((e) => { notes.push(e.message); return []; }));
   }
   if (hasA) {
     const places = cities.length ? cities : [''];
-    titles.forEach((t) => places.forEach((c) => tasks.push(adzuna(k.adzunaId, k.adzunaKey, t, c, ctrl.signal).catch((e) => { notes.push(e.message); return []; }))));
+    titles.forEach((t) => places.forEach((c) => tasks.push(adzuna(t, c, ctrl.signal).catch((e) => { notes.push(e.message); return []; }))));
   }
   try { (await Promise.all(tasks)).forEach((list) => raw.push(...list)); } finally { clearTimeout(timer); }
   if (!raw.length && notes.length) throw Object.assign(new Error([...new Set(notes)].join(' · ')), { kind: 'source' });

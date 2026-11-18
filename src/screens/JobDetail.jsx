@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStore, updateProfile, usageOf, msUntilQuotaReset, formatDuration } from '../lib/store.js';
 import { findJob, setJobStatus } from '../lib/jobs.js';
+import { useStatus } from '../lib/api.js';
 import { callAI, tailorPrompt, cleanTailor, refinePrompt, trimPrompt, AIError, dropLabel } from '../lib/ai.js';
 import { setPath, getPath, validPath, pathLabel, normalizeResume, stripDashes, segments } from '../lib/resume.js';
 import { buildPdf, downloadBlob } from '../lib/pdfDoc.jsx';
@@ -14,6 +15,7 @@ function saveVersion(pid, id, fn) { updateProfile(pid, (p) => { fn(p.versions[id
 
 export default function JobDetail({ pid, id, route }) {
   const p = useStore((s) => s.profiles[pid]);
+  const groqOn = !!useStatus()?.groq;
   const job = findJob(p, id);
   const v = p.versions[id];
   const [phase, setPhase] = useState(null);   // null | 'working' | {error}
@@ -216,7 +218,7 @@ export default function JobDetail({ pid, id, route }) {
   );
   const errorCard = phase?.error ? (
     <Empty icon="alert" tone="err" title="Couldn't tailor right now" actions={<><button className="btn" onClick={() => tailor('tailor')}>Try again</button><button className="btn secondary" onClick={() => tailor('groq')}>Use backup AI (Groq)</button></>}>
-      {phase.error} Nothing was taken from today's limit. {phase.kind === 'nokey' ? <a href="#/settings">Open Settings</a> : 'You can always edit the resume yourself.'}
+      {phase.error} Nothing was taken from today's limit. You can always edit the resume yourself.
     </Empty>
   ) : null;
 
@@ -260,11 +262,11 @@ export default function JobDetail({ pid, id, route }) {
           <div className="col" style={{ background: 'var(--bg)', borderRadius: 12, padding: 14, fontSize: 14 }}>
             <div className="between"><span>Gemini Flash (tailoring)</span><b style={{ color: 'var(--err)' }}>Used up · resets in {formatDuration(msUntilQuotaReset())}</b></div>
             <div className="between"><span>Gemini Flash-Lite</span><b style={{ color: 'var(--ok)' }}>{Math.max(0, p.limits.refinePerDay - u.refine)} left</b></div>
-            <div className="between"><span>Groq</span><b style={{ color: p.keys.groq ? 'var(--ok)' : 'var(--mut)' }}>{p.keys.groq ? 'Available' : 'No key added'}</b></div>
+            <div className="between"><span>Groq</span><b style={{ color: groqOn ? 'var(--ok)' : 'var(--mut)' }}>{groqOn ? 'Available' : 'Not set up'}</b></div>
           </div>
           <div className="row" style={{ justifyContent: 'flex-end' }}>
             <button className="btn secondary" onClick={() => setLimit(false)}>Wait till tomorrow</button>
-            {p.keys.groq ? <button className="btn secondary" onClick={() => tailor('groq')}>Use Groq</button> : null}
+            {groqOn ? <button className="btn secondary" onClick={() => tailor('groq')}>Use Groq</button> : null}
             <button className="btn" onClick={() => tailor('refine')}>Use Flash-Lite</button>
           </div>
         </Modal>

@@ -1,0 +1,6 @@
+name = "shortlist-api"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+
+# Secrets (set with `npx wrangler secret put NAME`, never committed):
+# GEMINI_KEY, GROQ_KEY, RAPIDAPI_KEY, ADZUNA_ID (optional), ADZUNA_KEY (optional)

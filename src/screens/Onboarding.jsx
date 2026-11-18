@@ -16,7 +16,6 @@ const NOTICE = ['Immediate', '15 days', '30 days', '60 days', '90 days'];
 export default function Onboarding({ pid, editing }) {
   const p = useStore((s) => s.profiles[pid]);
   const [f, setF] = useState(() => structuredClone(p.prefs));
-  const [key, setKey] = useState(p.keys.gemini);
   const [resume, setResume] = useState(p.resume);
   const [file, setFile] = useState(p.resumeFile);
   const [tried, setTried] = useState(false);
@@ -32,7 +31,6 @@ export default function Onboarding({ pid, editing }) {
     work: f.work.office || f.work.hybrid || f.work.remote ? null : 'Pick at least one work type',
     salary: smin && smax && smin > smax ? "Minimum can't be more than maximum" : null,
     exp: f.expMin && f.expMax && +f.expMin > +f.expMax ? "'From' can't be more than 'Up to'" : null,
-    key: key.trim() ? null : 'Add your free Gemini key. Tailoring needs it.',
     resume: resume ? null : 'Upload your resume PDF',
   };
   const errCount = Object.values(errs).filter(Boolean).length;
@@ -41,10 +39,8 @@ export default function Onboarding({ pid, editing }) {
   async function onPdf(e) {
     const fl = e.target.files?.[0]; e.target.value = '';
     if (!fl) return;
-    if (!key.trim()) { setImportMsg({ tone: 'err', text: 'Add your Gemini key first. Reading the resume uses one AI request.' }); return; }
     setImporting(true); setImportMsg(null);
     try {
-      updateProfile(pid, (pp) => { pp.keys.gemini = key.trim(); });
       const { text, links, pages } = await readPdf(fl);
       if (text.length < 300) {
         setImportMsg({ tone: 'warn', text: 'This PDF looks scanned or image based, so almost no text could be read. Upload a text based PDF, or fill in your resume by hand in Resumes after setup.' });
@@ -80,7 +76,7 @@ export default function Onboarding({ pid, editing }) {
     if (errCount) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     updateProfile(pid, (pp) => {
       const prefsChanged = JSON.stringify(pp.prefs) !== JSON.stringify(f);
-      pp.prefs = f; pp.keys.gemini = key.trim(); pp.resume = resume; pp.resumeFile = file; pp.resumeUpdated = pp.resumeUpdated || Date.now(); pp.setup = true;
+      pp.prefs = f; pp.resume = resume; pp.resumeFile = file; pp.resumeUpdated = pp.resumeUpdated || Date.now(); pp.setup = true;
       if (prefsChanged) pp.feed = null; // refetch with new preferences
     });
     location.hash = '#/jobs';
@@ -131,9 +127,6 @@ export default function Onboarding({ pid, editing }) {
         </section>
 
         <section className="card" style={{ padding: 28, gap: 22 }}>
-          <Field label="Free AI key (Gemini)" error={show('key')} hint={<>Saved only on this device. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Get a free key</a> (Google account, about 2 minutes).</>}>
-            <input className={`input ${show('key') ? 'bad' : ''}`} type="password" autoComplete="off" value={key} onChange={(e) => setKey(e.target.value)} placeholder="Paste your key" />
-          </Field>
           <div className="field"><span>Master resume</span>
             {resume ? (
               <div className="row" style={{ border: '1px solid var(--line)', borderRadius: 12, padding: '10px 12px', flexWrap: 'nowrap' }}>

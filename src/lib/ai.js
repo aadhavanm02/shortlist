@@ -1,19 +1,19 @@
-// AI calls go straight from the browser to the provider with the user's own free key.
+// AI calls go through the Shortlist Worker, which adds the shared API key.
 import { getState, usageOf, bumpUsage } from './store.js';
+import { API } from './api.js';
 import { lines, validPath, getPath, stripDashes } from './resume.js';
 
 export class AIError extends Error {
   constructor(kind, msg) { super(msg); this.kind = kind; } // kind: nokey | quota | network | bad | server
 }
 
-async function gemini(key, model, system, user, timeoutMs = 60000) {
-  if (!key) throw new AIError('nokey', 'Add your free Gemini key in Settings.');
+async function gemini(model, system, user, timeoutMs = 60000) {
   const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), timeoutMs);
   let res;
   try {
-    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`, {
+    res = await fetch(`${API}/gemini/${encodeURIComponent(model)}`, {
       method: 'POST', signal: ctrl.signal,
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: [{ text: user }] }],
@@ -24,9 +24,10 @@ async function gemini(key, model, system, user, timeoutMs = 60000) {
     throw new AIError('network', e.name === 'AbortError' ? 'Gemini took too long to respond.' : 'Could not reach Gemini. Check your internet.');
   } finally { clearTimeout(t); }
   if (res.status === 429) throw new AIError('quota', 'Gemini says the free limit for this model is used up.');
+  if (res.status === 503) throw new AIError('nokey', 'The app\'s Gemini key is not set up yet.');
   if (res.status === 400 || res.status === 403) {
     const body = await res.text();
-    if (/API key|API_KEY|permission/i.test(body)) throw new AIError('nokey', 'Gemini rejected the key. Check it in Settings.');
+    if (/API key|API_KEY|permission/i.test(body)) throw new AIError('nokey', 'Gemini rejected the app\'s key. It needs to be replaced in the Worker.');
     if (/not found|model/i.test(body)) throw new AIError('bad', `Model "${model}" isn't available. Change it in Settings.`);
     throw new AIError('server', 'Gemini could not process this request.');
   }
@@ -36,18 +37,18 @@ async function gemini(key, model, system, user, timeoutMs = 60000) {
   return parseJSON(text);
 }
 
-async function groq(key, model, system, user) {
-  if (!key) throw new AIError('nokey', 'Add a free Groq key in Settings to use the backup AI.');
+async function groq(model, system, user) {
   let res;
   try {
-    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    res = await fetch(`${API}/groq`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model, temperature: 0.35, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] }),
     });
   } catch { throw new AIError('network', 'Could not reach Groq. Check your internet.'); }
   if (res.status === 429) throw new AIError('quota', 'Groq says the free limit is used up for now.');
-  if (res.status === 401) throw new AIError('nokey', 'Groq rejected the key. Check it in Settings.');
+  if (res.status === 503) throw new AIError('nokey', 'The backup AI (Groq) is not set up.');
+  if (res.status === 401) throw new AIError('nokey', 'Groq rejected the app\'s key.');
   if (!res.ok) throw new AIError('server', `Groq error ${res.status}. Try again.`);
   const data = await res.json();
   return parseJSON(data?.choices?.[0]?.message?.content || '');
@@ -67,13 +68,13 @@ export async function callAI(profileId, engine, system, user) {
   const p = getState().profiles[profileId];
   const u = usageOf(p);
   if (engine === 'groq') {
-    const out = await groq(p.keys.groq, p.models.groq, system, user);
+    const out = await groq(p.models.groq, system, user);
     bumpUsage(profileId, 'groq'); return out;
   }
   if (engine === 'tailor' && u.tailor >= p.limits.tailorPerDay) throw new AIError('quota', 'All of today\'s tailorings are used.');
   if (engine === 'refine' && u.refine >= p.limits.refinePerDay) throw new AIError('quota', 'All of today\'s refinements are used.');
   const model = engine === 'tailor' ? p.models.tailor : p.models.refine;
-  const out = await gemini(p.keys.gemini, model, system, user);
+  const out = await gemini(model, system, user);
   bumpUsage(profileId, engine === 'tailor' ? 'tailor' : 'refine');
   return out;
 }
