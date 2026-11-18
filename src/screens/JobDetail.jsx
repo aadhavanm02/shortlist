@@ -3,7 +3,7 @@ import { useStore, updateProfile, usageOf, msUntilQuotaReset, formatDuration } f
 import { findJob, setJobStatus } from '../lib/jobs.js';
 import { useStatus } from '../lib/api.js';
 import { callAI, tailorPrompt, cleanTailor, refinePrompt, trimPrompt, AIError, dropLabel } from '../lib/ai.js';
-import { setPath, getPath, validPath, pathLabel, normalizeResume, stripDashes, segments } from '../lib/resume.js';
+import { setPath, getPath, validPath, pathLabel, normalizeResume, stripDashes, segments, lockHeader } from '../lib/resume.js';
 import { buildPdf, downloadBlob } from '../lib/pdfDoc.jsx';
 import { TopBar, Icon, Banner, Empty, Score, Modal, useMobile, AppBar } from '../components/ui.jsx';
 import ResumeView from '../components/ResumeView.jsx';
@@ -42,7 +42,7 @@ export default function JobDetail({ pid, id, route }) {
   const u = usageOf(p);
   const tailorLeft = Math.max(0, p.limits.tailorPerDay - u.tailor);
   const refineLeft = v ? Math.max(0, Math.min(p.limits.refinePerJob - (v.refineUsed || 0), p.limits.refinePerDay - u.refine)) : 0;
-  const resume = v ? v.resume : master;
+  const resume = v ? lockHeader(v.resume, master) : master;
   const highlight = v ? [...new Set([...(v.suggestions || []).filter((s) => s.state === 'done').map((s) => s.path), ...(v.changed || [])])] : [];
 
   // ---------- tailoring ----------
@@ -403,7 +403,7 @@ function ChatPanel({ pid, id, job, v, refineLeft, onClose, mobile }) {
         const before = vv.resume; let r = vv.resume; const changed = [];
         (out.changes || []).forEach((c) => { if (validPath(r, c.path) && c.after) { r = setPath(r, c.path, stripDashes(dropLabel(r, c.path, c.after))); changed.push(c.path); } });
         (out.moves || []).forEach((m) => {
-          const list = r[m.section]?.[m.index]?.bullets;
+          const list = m.section === 'experience' ? r.experience?.[m.index]?.bullets : null;
           if (list && list[m.from] && m.to >= 0 && m.to < list.length) { r = structuredClone(r); const arr = r[m.section][m.index].bullets; const [b] = arr.splice(m.from, 1); arr.splice(m.to, 0, b); }
         });
         vv.undo = [...(vv.undo || []), before].slice(-10);

@@ -1,7 +1,7 @@
 // Installable web app helpers: Chrome's install prompt and the version label.
 import { useEffect, useState } from 'react';
 
-export const APP_VERSION = '2.4';
+export const APP_VERSION = '2.5';
 
 // Chrome fires this once when the app can be installed; keep it for our own button
 let deferred = null;

@@ -22,12 +22,13 @@ export default function Onboarding({ pid, editing }) {
   const [importMsg, setImportMsg] = useState(null);
   const fileRef = useRef(null);
   // New accounts: load the master resume stored for this Google account, so there's nothing to upload
+  const [masterVer, setMasterVer] = useState(null);
   const [masterState, setMasterState] = useState(p.resume || editing ? 'done' : 'loading');
   useEffect(() => {
     if (masterState !== 'loading') return;
     fetchMaster().then((m) => {
       if (m?.resume) {
-        setResume(normalizeResume(m.resume)); setFile(m.fileName || 'Master resume');
+        setResume(normalizeResume(m.resume)); setFile(m.fileName || 'Master resume'); setMasterVer(m.version || 1);
         if (m.prefs) setF((x) => ({ ...x, ...Object.fromEntries(Object.entries(m.prefs).filter(([k]) => !(Array.isArray(x[k]) ? x[k].length : x[k] && k !== 'work'))) }));
         setMasterState('found');
       } else setMasterState('none');
@@ -61,7 +62,7 @@ export default function Onboarding({ pid, editing }) {
     if (errCount) { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
     updateProfile(pid, (pp) => {
       const prefsChanged = JSON.stringify(pp.prefs) !== JSON.stringify(f);
-      pp.prefs = f; pp.resume = resume; pp.resumeFile = file; pp.resumeUpdated = pp.resumeUpdated || Date.now(); pp.setup = true;
+      pp.prefs = f; pp.resume = resume; pp.resumeFile = file; if (masterVer) pp.masterVersion = masterVer; pp.resumeUpdated = pp.resumeUpdated || Date.now(); pp.setup = true;
       if (prefsChanged) pp.feed = null; // refetch with new preferences
     });
     location.hash = '#/jobs';

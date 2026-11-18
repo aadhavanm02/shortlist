@@ -2,7 +2,11 @@ import { useRef, useState } from 'react';
 import { useStore, updateProfile } from '../lib/store.js';
 import { TopBar, Field, Banner, Icon } from '../components/ui.jsx';
 import ResumeView from '../components/ResumeView.jsx';
-import { normalizeResume, EMPTY_RESUME } from '../lib/resume.js';
+import { normalizeResume, EMPTY_RESUME, LOCKED } from '../lib/resume.js';
+
+// A new PDF replaces the content, but the top section (name, title, contact, links) and design stay as they are
+const HEADER = LOCKED.filter((k) => !['education', 'projects'].includes(k));
+function lockHeaderOnly(next, prev) { const o = normalizeResume(prev); const n = normalizeResume(next); HEADER.forEach((k) => { if (k === 'skillsLink' ? o[k]?.url : (Array.isArray(o[k]) ? o[k].length : o[k])) n[k] = structuredClone(o[k]); }); return n; }
 import { buildPdf, downloadBlob } from '../lib/pdfDoc.jsx';
 import { importResumePdf } from '../lib/importResume.js';
 
@@ -21,7 +25,7 @@ export default function MasterEditor({ pid, route }) {
     if (!fl) return;
     setImporting(true); setImportMsg(null);
     const { resume, msg } = await importResumePdf(pid, fl, p.name);
-    if (resume) { setR(resume); updateProfile(pid, (pp) => { pp.resume = resume; pp.resumeFile = fl.name; pp.resumeUpdated = Date.now(); }); setSaved(true); }
+    if (resume) { const keep = p.resume ? lockHeaderOnly(resume, p.resume) : resume; setR(keep); updateProfile(pid, (pp) => { pp.resume = keep; pp.resumeFile = fl.name; pp.resumeUpdated = Date.now(); }); setSaved(true); }
     setImportMsg(msg); setImporting(false);
   };
   const up = (fn) => { setR((x) => { const c = structuredClone(x); fn(c); return c; }); setSaved(false); };

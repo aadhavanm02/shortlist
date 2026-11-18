@@ -3,6 +3,7 @@ import { useStore, updateProfile } from '../lib/store.js';
 import { TopBar, Icon, Empty, Modal, useMobile } from '../components/ui.jsx';
 import { findJob } from '../lib/jobs.js';
 import { buildPdf, downloadBlob } from '../lib/pdfDoc.jsx';
+import { lockHeader } from '../lib/resume.js';
 
 export default function Resumes({ pid, route }) {
   const mobile = useMobile();
@@ -10,7 +11,7 @@ export default function Resumes({ pid, route }) {
   const [busy, setBusy] = useState(null);
   const [del, setDel] = useState(null);
   const versions = Object.entries(p.versions).map(([id, v]) => ({ id, v, job: findJob(p, id) })).sort((a, b) => (b.v.createdAt || 0) - (a.v.createdAt || 0));
-  const dl = async (r, name, key) => { setBusy(key); try { const { blob } = await buildPdf(r); downloadBlob(blob, name); } finally { setBusy(null); } };
+  const dl = async (r, name, key) => { setBusy(key); try { const { blob } = await buildPdf(lockHeader(r, p.resume)); downloadBlob(blob, name); } finally { setBusy(null); } };
   const date = (t) => (t ? new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '');
   const thumb = <div style={{ width: 36, height: 46, flex: 'none', borderRadius: 4, border: '1px solid var(--line)', borderTop: '3px solid var(--acc)' }} />;
   const delModal = del ? (

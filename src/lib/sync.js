@@ -13,7 +13,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signO
 import { getFirestore, doc, getDoc, getDocs, collection, onSnapshot, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { firebaseConfig } from './firebase-config.js';
 import { API } from './api.js';
-import { getState, setState, subscribe, blankProfile, normalizeProfile, clearLocal } from './store.js';
+import { getState, setState, subscribe, blankProfile, normalizeProfile, clearLocal, updateProfile } from './store.js';
+import { normalizeResume } from './resume.js';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -185,6 +186,7 @@ async function start(user) {
     listen();
     schedule();
     setAuth({ status: 'in', error: null });
+    refreshMaster();
   } catch (e) {
     // offline or rules not set: keep working from this device's copy
     if (!cached) setState((s) => { s.profiles = { [uid]: blankProfile(uid, who) }; s.active = uid; return s; });
@@ -217,4 +219,15 @@ export async function fetchMaster() {
     const data = await res.json();
     return data.found ? data : null;
   } catch { return null; }
+}
+
+// When a newer master resume is stored on the server, use it (the design and header stay the person's own)
+async function refreshMaster() {
+  const p = uid && getState().profiles[uid];
+  if (!p?.setup) return;
+  const m = await fetchMaster();
+  if (!m?.resume || !uid) return;
+  const ver = m.version || 1;
+  if (ver <= (p.masterVersion || 0)) return;
+  updateProfile(uid, (pp) => { pp.resume = normalizeResume(m.resume); pp.resumeFile = m.fileName || pp.resumeFile; pp.resumeUpdated = Date.now(); pp.masterVersion = ver; });
 }
