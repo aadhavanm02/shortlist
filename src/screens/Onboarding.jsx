@@ -97,7 +97,7 @@ export default function Onboarding({ pid, editing }) {
         {tried && errCount ? <Banner tone="err"><b>{errCount} {errCount === 1 ? 'thing' : 'things'} to fix</b> before we can find jobs.</Banner> : null}
 
         <section className="card" style={{ padding: mobile ? 18 : 28, gap: mobile ? 20 : 24 }}>
-          <TagInput label="Job titles to search" value={f.titles} onChange={(v) => set('titles', v)} suggestions={TITLES[pid]} placeholder="Search or type a title" error={show('titles')} hint="Not in the list? Type it and press Enter to add it as a keyword." />
+          <TagInput label="Job titles to search" value={f.titles} onChange={(v) => set('titles', v)} suggestions={[...TITLES.A, ...TITLES.G]} placeholder="Search or type a title" error={show('titles')} hint="Not in the list? Type it and press Enter to add it as a keyword." />
           <TagInput label="Titles to avoid (optional)" value={f.avoid} onChange={(v) => set('avoid', v)} suggestions={[]} placeholder="e.g. Graphic Designer" />
           <div className="grid2">
             <TagInput label="Locations" value={f.cities} onChange={(v) => set('cities', v)} suggestions={CITIES} placeholder="Add city" error={show('cities')} />

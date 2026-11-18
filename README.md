@@ -2,7 +2,7 @@
 
 A personal job hunting app for two people (Aadhavan and Gayathri). It finds up to 20 matching jobs a day, tailors your resume to each job with free AI, and downloads a one-page PDF.
 
-Resumes and preferences are saved only on the device you use. API keys live in a small Cloudflare Worker (`worker/`), so nobody has to enter a key in the app, and keys never appear in this repo or in the site's code.
+Sign in with Google: each person's data is stored in Firebase (Firestore, free Spark plan) under their own account and synced across devices (`src/lib/sync.js`). Security rules are in `firestore.rules`; paste them into Firestore → Rules after changes. API keys live in a small Cloudflare Worker (`worker/`), so nobody has to enter a key in the app, and keys never appear in this repo or in the site's code.
 
 ## First-time setup (each person)
 

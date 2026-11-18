@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useStore, usageOf, setActive } from '../lib/store.js';
+import { useStore, usageOf } from '../lib/store.js';
 
 const P = {
   back: <path d="M15 6l-6 6 6 6" />, search: <><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></>,
@@ -56,9 +56,13 @@ export function Logo({ href = '#/' }) {
   return <a className="logo" href={href}><span className="logo-mark"><Icon n="check" s={16} w={2.4} c="#fff" /></span><span className="logo-text">Shortlist</span></a>;
 }
 
-export function Avatar({ id, s = 32 }) {
-  const a = id === 'A';
-  return <span style={{ width: s, height: s, flex: 'none', borderRadius: '50%', background: a ? 'var(--tint)' : 'var(--bluebg)', color: a ? 'var(--acct)' : '#3A4FA0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--h)', fontWeight: 800, fontSize: s * 0.45 }}>{a ? 'A' : 'G'}</span>;
+const AV = [['var(--tint)', 'var(--acct)'], ['var(--bluebg)', '#3A4FA0'], ['var(--okbg)', 'var(--ok)']];
+export function Avatar({ id, name, s = 32 }) {
+  const p = useStore((st) => (id ? st.profiles[id] : null));
+  const nm = name || p?.name || '?';
+  if (p?.photo) return <img src={p.photo} alt="" referrerPolicy="no-referrer" width={s} height={s} style={{ width: s, height: s, flex: 'none', borderRadius: '50%', objectFit: 'cover', background: '#F3F1EF' }} />;
+  const [bg, fg] = AV[[...nm].reduce((h, c) => h + c.charCodeAt(0), 0) % AV.length];
+  return <span style={{ width: s, height: s, flex: 'none', borderRadius: '50%', background: bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--h)', fontWeight: 800, fontSize: s * 0.45 }}>{nm[0].toUpperCase()}</span>;
 }
 
 export function Quota({ pid }) {
@@ -78,7 +82,7 @@ export function TopBar({ pid, route, back, title, sub }) {
           <header className="mhead" style={{ paddingBottom: 14 }}>
             <div className="between" style={{ flexWrap: 'nowrap' }}>
               <div className="col" style={{ gap: 2, minWidth: 0 }}><h1>{title}</h1>{sub ? <span className="small">{sub}</span> : null}</div>
-              <button className="avatar-btn" aria-label="Switch profile" onClick={() => { setActive(null); location.hash = '#/'; }}><Avatar id={pid} s={40} /></button>
+              <a className="avatar-btn" aria-label="Account and settings" href="#/settings"><Avatar id={pid} s={40} /></a>
             </div>
           </header>
         ) : null}
@@ -99,9 +103,9 @@ export function TopBar({ pid, route, back, title, sub }) {
         <a className={on('/settings')} href="#/settings">Settings</a>
         <span className="divider-v hide-sm" />
         <span className="hide-sm"><Quota pid={pid} /></span>
-        <button className="btn secondary sm" style={{ borderRadius: 999, paddingLeft: 6 }} onClick={() => { setActive(null); location.hash = '#/'; }} aria-label="Switch profile">
-          <Avatar id={pid} />{p.name}<Icon n="down" s={14} />
-        </button>
+        <a className="btn secondary sm" style={{ borderRadius: 999, paddingLeft: 6 }} href="#/settings" aria-label="Account and settings">
+          <Avatar id={pid} />{p.name}
+        </a>
       </nav>
     </header>
   );

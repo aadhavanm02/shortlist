@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useStore, setActive, updateProfile } from '../lib/store.js';
+import { useStore, updateProfile } from '../lib/store.js';
 import { fetchFeed, setJobStatus, pruneSkipped } from '../lib/jobs.js';
 import { TopBar, Icon, Banner, Empty, Score, Skeleton, Toggle, useToast, useMobile, Avatar, Modal } from '../components/ui.jsx';
 
@@ -143,7 +143,7 @@ export default function Jobs({ pid, route, tab }) {
         <div className="between" style={{ flexWrap: 'nowrap', alignItems: 'center' }}>
           <h1>Today's jobs</h1>
           <div className="row" style={{ flexWrap: 'nowrap', gap: 4 }}>
-            <button className="avatar-btn" aria-label="Switch profile" onClick={() => { setActive(null); location.hash = '#/'; }}><Avatar id={pid} s={40} /></button>
+            <a className="avatar-btn" aria-label="Account and settings" href="#/settings"><Avatar id={pid} s={40} /></a>
           </div>
         </div>
         <div className="search" style={{ flex: 'none' }}><Icon n="search" s={18} c="var(--mut)" /><input aria-label="Search jobs" placeholder="Search title, company or skill" value={q} onChange={(e) => setQ(e.target.value)} />{q ? <button className="iconbtn" style={{ width: 36, height: 36 }} aria-label="Clear search" onClick={() => setQ('')}><Icon n="x" s={18} /></button> : null}{tab === 'new' ? <button className="iconbtn" style={{ width: 36, height: 36 }} aria-label="Filter and sort" onClick={() => setShowFilters(true)}><Icon n="sliders" s={18} /></button> : null}</div>

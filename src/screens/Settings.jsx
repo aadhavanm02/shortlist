@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useStore, updateProfile, resetProfile, usageOf, msUntilQuotaReset, formatDuration, exportProfile, setActive, getSaveError } from '../lib/store.js';
+import { useStore, updateProfile, resetProfile, usageOf, msUntilQuotaReset, formatDuration, exportProfile, getSaveError } from '../lib/store.js';
 import { TopBar, Icon, Avatar, Modal, Field, Banner, useMobile } from '../components/ui.jsx';
 import { downloadBlob } from '../lib/pdfDoc.jsx';
 import { useAppVersion, useInstall } from '../lib/pwa.js';
+import { signOut, useAuth } from '../lib/sync.js';
 
 function Bar({ label, used, total, note, grey }) {
   const pct = total ? Math.min(100, Math.round((used / total) * 100)) : 0;
@@ -24,6 +25,9 @@ export default function Settings({ pid, route }) {
   const u = usageOf(p);
   const version = useAppVersion();
   const inst = useInstall();
+  const auth = useAuth();
+  const doSignOut = async () => { await signOut(); location.hash = '#/'; };
+  const roleLine = p.role || p.prefs.titles[0] || '';
   const mobile = useMobile();
 
   const save = () => {
@@ -44,8 +48,8 @@ export default function Settings({ pid, route }) {
   const resetModal = confirm ? (
     <Modal onClose={() => setConfirm(false)} labelledBy="rst">
       <h2 id="rst">Reset {p.name}'s profile?</h2>
-      <p className="sub" style={{ lineHeight: 1.5 }}>This removes preferences, master resume, saved versions and job history from this browser. Downloaded PDFs stay on your device. This can't be undone.</p>
-      <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn secondary" onClick={() => setConfirm(false)}>Cancel</button><button className="btn dangerfill" onClick={() => { resetProfile(pid); location.hash = '#/'; }}>Reset profile</button></div>
+      <p className="sub" style={{ lineHeight: 1.5 }}>This removes your preferences, master resume, saved versions and job history from your account on every device. Downloaded PDFs stay where you saved them. This can't be undone.</p>
+      <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn secondary" onClick={() => setConfirm(false)}>Cancel</button><button className="btn dangerfill" onClick={() => { resetProfile(pid); setConfirm(false); location.hash = '#/setup'; }}>Reset profile</button></div>
     </Modal>
   ) : null;
   const chev = <span className="chev"><Icon n="chev" s={18} /></span>;
@@ -61,12 +65,13 @@ export default function Settings({ pid, route }) {
       <TopBar pid={pid} route={route} title="Settings" />
       <main className="main" style={{ padding: '14px 16px 24px', gap: 10 }}>
         {err ? <Banner tone="err">{err}</Banner> : null}
+        {auth.error ? <Banner tone="warn">{auth.error}</Banner> : null}
         <div className="mlist">
-          <button className="mrow" style={{ width: '100%', background: 'none', border: 0, textAlign: 'left', cursor: 'pointer', gap: 12, padding: '12px 6px 12px 16px' }} onClick={() => { setActive(null); location.hash = '#/'; }}>
+          <div className="mrow" style={{ gap: 12, padding: '12px 16px' }}>
             <Avatar id={pid} s={48} />
-            <span className="mrow-main"><span className="mrow-t" style={{ fontSize: 17 }}>{p.name}</span><span className="mrow-s">{p.role} · Switch profile</span></span>
-            {chev}
-          </button>
+            <span className="mrow-main"><span className="mrow-t" style={{ fontSize: 17 }}>{p.name}</span><span className="mrow-s">{p.email || roleLine}</span></span>
+          </div>
+          <button className="mrow" style={{ width: '100%', background: 'none', border: 0, borderTop: '1px solid var(--line)', textAlign: 'left', cursor: 'pointer' }} onClick={doSignOut}><span className="mrow-main"><span className="mrow-t" style={{ color: 'var(--err)' }}>Sign out</span><span className="mrow-s">Your data stays saved in your account</span></span></button>
         </div>
 
         <span className="label" style={{ margin: '10px 4px 0' }}>Job search</span>
@@ -115,11 +120,12 @@ export default function Settings({ pid, route }) {
       <main className="main narrow">
         {mobile ? null : <h1 className="title">Settings</h1>}
         {err ? <Banner tone="err">{err}</Banner> : null}
+        {auth.error ? <Banner tone="warn">{auth.error}</Banner> : null}
         <section className="card" style={{ padding: '8px 28px 20px', gap: 0 }}>
           <div className="row" style={{ padding: '16px 0', borderBottom: '1px solid var(--line)', flexWrap: 'nowrap', gap: 14 }}>
             <Avatar id={pid} s={46} />
-            <div className="col" style={{ flex: 1, gap: 2 }}><b style={{ color: 'var(--ink)', fontSize: 16 }}>{p.name}</b><span className="small">{p.role} · {p.prefs.cities.join(', ') || 'Remote'}</span></div>
-            <button className="btn ghost sm" onClick={() => { setActive(null); location.hash = '#/'; }}>Switch profile</button>
+            <div className="col" style={{ flex: 1, gap: 2 }}><b style={{ color: 'var(--ink)', fontSize: 16 }}>{p.name}</b><span className="small">{p.email || roleLine}</span></div>
+            <button className="btn ghost sm" onClick={doSignOut}>Sign out</button>
           </div>
           {row('Job preferences', `${p.prefs.titles.length} titles · ${p.prefs.cities.join(', ') || 'Remote'}${p.prefs.expMin || p.prefs.expMax ? ` · ${p.prefs.expMin || 0}–${p.prefs.expMax || '?'} yrs` : ''}`, <a className="btn secondary sm" href="#/setup">Edit</a>)}
           {row('Master resume', p.resumeFile || p.resume?.name || 'Not added', <a className="btn secondary sm" href="#/resumes/master">Edit</a>)}
@@ -171,8 +177,8 @@ export default function Settings({ pid, route }) {
       {confirm ? (
         <Modal onClose={() => setConfirm(false)} labelledBy="rst">
           <h2 id="rst">Reset {p.name}'s profile?</h2>
-          <p className="sub" style={{ lineHeight: 1.5 }}>This removes preferences, master resume, saved versions and job history from this browser. Downloaded PDFs stay on your device. This can't be undone.</p>
-          <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn secondary" onClick={() => setConfirm(false)}>Cancel</button><button className="btn dangerfill" onClick={() => { resetProfile(pid); location.hash = '#/'; }}>Reset profile</button></div>
+          <p className="sub" style={{ lineHeight: 1.5 }}>This removes your preferences, master resume, saved versions and job history from your account on every device. Downloaded PDFs stay where you saved them. This can't be undone.</p>
+          <div className="row" style={{ justifyContent: 'flex-end' }}><button className="btn secondary" onClick={() => setConfirm(false)}>Cancel</button><button className="btn dangerfill" onClick={() => { resetProfile(pid); setConfirm(false); location.hash = '#/setup'; }}>Reset profile</button></div>
         </Modal>
       ) : null}
     </div>
